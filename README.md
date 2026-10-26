@@ -1,0 +1,118 @@
+# Card Studio
+
+A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It prints on Avery 5911 sheets: ten 3.5 × 2-inch cards on US Letter paper.
+
+No build step, UI framework, server, account, or database service is required. The interface starts with an editable example design and twelve fictional sample records.
+
+## Try it
+
+
+
+## Import your records
+
+Choose **Import data**, then drop a CSV, XLS, or XLSX file into the import area or choose a file. The first row supplies the merge-field names. Excel workbooks expose a worksheet selector.
+
+- CSV values remain text, including leading zeros, Unicode characters, and formula-looking strings. Quoted commas, embedded line breaks, escaped double quotes, comma/semicolon/tab delimiters, UTF-8, and BOM-marked UTF-16 are supported. For other encodings, export as **CSV UTF-8** in Excel first.
+- Excel tends to remove leading zeros.
+- Excel formulas use their saved/cached result; this app does not recalculate formulas or execute macros. Recalculate and save the workbook in Excel first when needed.
+- Empty records are skipped. A column with data but no heading receives `Column N`. Duplicate headings receive suffixes such as `Name (2)`, and the app explains the change.
+- Merge fields are case-sensitive. `FirstName` and `Firstname` are different fields. Spaces at the ends of headings are trimmed; spaces within headings are supported.
+- Limits: 20 MB per spreadsheet, 10,000 records, 250 columns, and 20,000 characters per cell. For an Excel sheet with a large unused formatted range, remove unused rows/columns or export that worksheet as CSV.
+- All rows from the selected worksheet are imported, including hidden or filtered-out rows. Export only the intended records if you need a subset.
+
+Use **Clear records** to remove the imported records from the current page. Refreshing or closing the page also discards the records; the next visit starts with the fictional example.
+
+## Design a card
+
+Use **Text**, **Image**, and **Shape** to add objects. Select an object on the card or in the Layers list to edit it.
+
+A text object can mix static text and multiple merge fields:
+
+```text
+<<LastName>>, <<FirstName>>
+ID: <<RecordID>>
+Category <<Category>> - Location <<Location>>
+```
+
+Select a text box and click a merge-field chip to insert it at the text editor's cursor. If no text box is selected, the chip creates a new one. **Show merged text** previews the current record; switch it off to see the placeholders. The record controls let you inspect other records.
+
+- Move objects by dragging. Resize with the four corner handles, or use exact inch values in the properties panel.
+- Rotate with the circular handle or enter a degree value. Hold **Shift** while rotating to snap to 15-degree increments.
+- The **Snap** control snaps movement to 0.025 inches. Hold **Alt** while dragging to bypass it.
+- Images preserve proportions by default. Hold **Shift** during a corner resize to preserve any object's proportions. Fit, crop, and stretch modes are available for images.
+- Text supports font, point size, color, bold, italic, underline, alignment, and automatic shrinking to fit. All text in one box shares the same formatting; use separate boxes for different styles.
+- Shrink-to-fit can wrap text and reduce it to 6 pt. It never increases the chosen size. If it still cannot fit, printing stops and identifies the affected records and layers.
+- Supported image inputs are PNG, JPEG, WebP, GIF, and SVG. Images are embedded in the layout, normalized to PNG/JPEG, and reduced to a maximum dimension of 1600 pixels. GIFs use one frame and SVGs become raster images. Image inputs are limited to 10 MB / 60 megapixels; embedded images are limited to approximately 6 MB each.
+- Shapes supply solid rectangles, borders, and divider rules. Bring forward / Send backward changes stacking; the top layer in the list is the front of the card.
+- Press **Escape** or click empty card space to deselect and edit the card background.
+- The dashed 1/8-inch safe area is only a design guide. Objects outside the card are clipped. Avoid placing important text on the edge.
+- Cards support up to 100 objects, with up to 80 undo-history states.
+
+### Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| Arrow keys | Move the selected object 0.01 inch |
+| Shift + arrows | Move 0.1 inch |
+| Delete / Backspace | Delete the selected object |
+| Ctrl/Cmd + D | Duplicate the selected object |
+| Ctrl/Cmd + Z | Undo |
+| Ctrl/Cmd + Shift + Z | Redo |
+| Ctrl/Cmd + S | Save layout |
+| Ctrl/Cmd + P | Prepare and print cards |
+| Escape | Deselect |
+
+Text-editing controls keep their normal keyboard behavior.
+
+## Save, copy, and reuse designs
+
+**Save layout** stores the current design in this browser's IndexedDB. Change its name in the header. **Layouts** opens saved designs, makes independent copies, imports a layout file, or deletes a saved layout. **Save current as a copy** saves the current design under a new identity and switches to that copy.
+
+**Export** downloads a versioned `.cardlayout.json` file. It includes object positions, styles, static text, background, and embedded images. It excludes the spreadsheet rows and workbook. **Caution: Any personal information you manually type into static text or import as an image is part of the saved design.**
+
+Export files for backups, sharing with colleagues, or moving to a different computer. Import through **Layouts → Import layout**, then save the imported design. Re-import the current spreadsheet separately.
+
+Browser saves belong to this browser profile and site origin. They do not sync between devices, and clearing site data can remove them. **Changes are saved explicitly; the app does not auto-save.** It warns before replacing an unsaved layout or leaving the page when the browser supports that warning. Keep exported backups.
+
+## Preview and print
+
+1. Import your real records and check the design against several records, especially long names.
+2. Open **Preview & print**. Choose the record range, number of copies per record, and first available card on the first sheet.
+3. Review the sheet preview. Records fill left to right and top to bottom; copies of a record are adjacent. Starting slots apply only to the first sheet; remaining slots on the last sheet are blank.
+4. Use **Print alignment test** on plain Letter paper. Hold it against the perforated stock to check placement. Positive horizontal/vertical adjustments move right/down; negative values move left/up. These settings apply to the current session, not the saved design.
+5. Click **Print cards / Save PDF**. The app loads the fonts and checks all selected records for missing merge fields and overflowing text before opening the print dialog.
+6. Set **Letter**, **Portrait**, **100% / Actual size**, **Margins: None**, **Headers and footers: Off**, and **Background graphics: On**. Print single-sided. Choose **Save as PDF** if you want a PDF first.
+
+The app cannot change your printer driver settings. Do not use Fit to page or a second scaling step when printing a saved PDF. If alignment drifts progressively down the sheet, verify the paper size and scaling; an offset will not fix a scaling error. Don't use the browser's menu-based Print command - use the app's print button (or its Ctrl/Cmd+P shortcut) for card printing.
+
+## Dependencies and local hosting
+
+The application itself consists of `index.html`, `style.css`, and `script.js`. No npm installation is needed to run it.
+
+### Excel reader
+
+XLS/XLSX parsing uses **SheetJS Community Edition 0.20.3**, pinned to the version recommended by its standalone-browser documentation when this version was built. It loads only when an Excel file is imported:
+
+1. Try `vendor/xlsx.full.min.js` beside the app.
+2. If it is absent or unavailable, try `https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js`.
+
+If your network blocks the CDN, download the full standalone build from the official source and place it at `vendor/xlsx.full.min.js`. Include the upstream license and any accompanying notices when redistributing it. Keep the full build: the mini build omits XLS support. The reader is not bundled in this ZIP. CSV import remains available if the reader cannot load.
+
+- [SheetJS standalone installation](https://docs.sheetjs.com/docs/getting-started/installation/standalone/)
+- [SheetJS distribution and license information](https://cdn.sheetjs.com/)
+
+### Fonts
+
+Arial, Verdana, Georgia, Times New Roman, Trebuchet MS, and Courier New use installed system fonts. Inter, Roboto, Open Sans, Montserrat, Lato, Oswald, Merriweather, and Libre Barcode 39 load on demand through `fonts.googleapis.com` and `fonts.gstatic.com`. A platform can synthesize an italic style if the selected family has no native italic face.
+
+Font requests contain the font family and styles, never merged text. If a web font cannot load, select a system font; printing waits for the selected fonts rather than silently substituting a different font. Font appearance and available system fonts can differ between Windows, macOS, and Linux.
+
+### Code 39 barcodes
+
+Select **Libre Barcode 39** for a text box and enter `*<<RecordID>>*` (replace `RecordID` with your column name), or a static value such as `*001234*`. The asterisks supply the required start/stop markers; the app does not add them automatically. The font supports uppercase A–Z, digits, spaces, and `- . $ / + %`. This renders bars only - add a separate ordinary text box for readable values if needed. Barcode "text" always renders in regular style; bold, italic, and underline controls are disabled while this font is selected. The font loads on demand, is preserved in saved/exported layouts, and must load successfully before printing. Keep each barcode on one line, leave clear white space on both sides, and test the printed result with your scanner at the intended size. Shrink-to-fit can make bars too small to scan; enlarge the box or disable shrinking when setting a fixed barcode size.
+
+[Libre Barcode Code 39 documentation](https://graphicore.github.io/librebarcode/documentation/code39)
+
+## Data handling
+
+The app has no analytics, accounts, upload endpoint, or backend. It reads files through the browser's File API and holds the records in memory. Spreadsheet cells are displayed as literal text, not executable HTML. External library and font providers receive ordinary resource requests, not a spreadsheet upload. Hosting the Excel reader yourself and using system fonts removes those runtime dependency requests.
