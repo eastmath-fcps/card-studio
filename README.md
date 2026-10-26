@@ -1,12 +1,10 @@
 # Card Studio
 
-A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It prints on Avery 5911 sheets: ten 3.5 × 2-inch cards on US Letter paper.
-
-No build step, UI framework, server, account, or database service is required. The interface starts with an editable example design and twelve fictional sample records.
+A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It prints on Avery 5911 sheets: ten 3.5 × 2-inch cards on US Letter paper. The interface starts with an editable example design and twelve fictional sample records.
 
 ## Try it
 
-
+Head over to [Card Studio](https://eastmath-fcps.github.io/card-studio/) to check it out!
 
 ## Import your records
 
