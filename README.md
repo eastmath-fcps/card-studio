@@ -100,7 +100,7 @@ The app cannot change your printer driver settings. Do not use Fit to page or a 
 
 ## Dependencies and local hosting
 
-The application itself consists of `index.html`, `style.css`, `templates.js`, and `script.js`. Keep all four files together; `templates.js` must load before `script.js` (and does by default).
+The application consists of `index.html`, `style.css`, `templates.js`, `google-fonts.js`, `fonts.js`, and `script.js`. Keep all six files together. The HTML loads the template catalog, Google Fonts catalog, and font manager before the main editor script.
 
 ### Excel reader
 
@@ -116,9 +116,34 @@ If your network blocks the CDN, download the full standalone build from the offi
 
 ### Fonts
 
-Arial, Verdana, Georgia, Times New Roman, Trebuchet MS, and Courier New use installed system fonts. Inter, Roboto, Open Sans, Montserrat, Lato, Oswald, Merriweather, and Libre Barcode 39 load on demand through `fonts.googleapis.com` and `fonts.gstatic.com`. A platform can synthesize an italic style if the selected family has no native italic face.
+The default menu offers six system fonts (*Arial*, *Verdana*, *Georgia*, *Times New Roman*, *Trebuchet MS*, and *Courier New*) and three Google Fonts (*Roboto*, *Merriweather*, and *Libre Barcode 39*)
 
-Font requests contain the font family and styles, never merged text. If a web font cannot load, select a system font; printing waits for the selected fonts rather than silently substituting a different font. Font appearance and available system fonts can differ between Windows, macOS, and Linux.
+Select a text object and choose **More fonts…** to open the font picker. Fonts you apply are added to the menu for reuse during the session; fonts referenced by a saved layout reappear when you open that layout.
+
+#### Google Fonts
+
+Search by family name, filter by category, and browse the results. Click a family to load its preview, then choose **Use this font**. Only fonts you preview or use are downloaded. The bundled catalog contains 1,950 families from Google Fonts, captured October 27, 2026, and also works when opening `index.html` directly. For a family added after that snapshot, enter its exact Google Fonts name and click **Preview the entered name**.
+
+#### Local fonts
+
+In **More fonts… → Local fonts**, choose either route:
+
+- **Installed font name:** Enter the font's full name (for example, `Team 401`), click **Preview installed font**, then **Use this font**. The browser verifies that it can access the installed face. If the name is not recognized, try its full or PostScript name, or import the font file instead.
+- **Font file:** Choose a `.ttf`, `.otf`, `.woff`, or `.woff2` file up to 20 MB, edit its menu label if desired, and click **Import font file**, then **Use this font**. Files are read locally and saved in this browser's IndexedDB; they are not uploaded. Each import registers one face, so bold and italic may be synthesized.
+
+Imported font files remain available after reloading in the same browser profile and site origin. Clearing site data removes them. Exported layouts contain the font source, name, and a content-based file reference, **not the font bytes**. On another computer, installed-font references need the same installed font; imported-file references need the exact same font file imported again. Reimporting that file restores matching references even if you give it a different menu label. Keep the original font files with your layout backups.
+
+Text line height automatically expands when the selected font’s glyphs would extend outside the usual line box. This prevents tall display fonts from being clipped at the top or overlapping between lines.
+
+Missing Google or local fonts produce an actionable message and block printing until they load or you choose a replacement. The six system-font choices continue to use the browser's normal platform fallbacks.
+
+Layouts now export as schema version 3. Versions 1 and 2 remain supported, including layouts using former defaults such as Inter, Open Sans, Montserrat, Lato, and Oswald. Use this updated app to open new exports.
+
+Font loading, persistence, and picker behavior are isolated in `fonts.js`; `google-fonts.js` holds family names, categories, and available styles. To refresh the catalog, preserve its `CardStudioGoogleFonts` array shape and regenerate entries from Google's metadata, ordered by popularity.
+
+- [Google Fonts catalog metadata](https://fonts.google.com/metadata/fonts)
+- [Google Fonts CSS2 API](https://developers.google.com/fonts/docs/css2)
+- [Browser FontFace API](https://developer.mozilla.org/en-US/docs/Web/API/FontFace/FontFace)
 
 ### Code 39 barcodes
 
@@ -128,7 +153,7 @@ Select **Libre Barcode 39** for a text box and enter `*<<RecordID>>*` (replace `
 
 ## Data handling
 
-The app has no analytics, accounts, upload endpoint, or backend. It reads files through the browser's File API and holds the records in memory. Spreadsheet cells are displayed as literal text, not executable HTML. External library and font providers receive ordinary resource requests, not a spreadsheet upload. Hosting the Excel reader yourself and using system fonts removes those runtime dependency requests.
+The app has no analytics, accounts, upload endpoint, or backend. It reads files through the browser's File API and holds the records in memory. Spreadsheet cells are displayed as literal text, not executable HTML. External library and font providers receive ordinary resource requests, not a spreadsheet upload. Hosting the Excel reader yourself and using system or local fonts removes those runtime dependency requests.
 
 ## Adding paper-stock templates
 

@@ -10,6 +10,8 @@
 	<link rel="stylesheet" href="style.css" />
 	<style id="pageSizeStyle"></style>
 	<script src="templates.js" defer></script>
+	<script src="google-fonts.js" defer></script>
+	<script src="fonts.js" defer></script>
 	<script src="script.js" defer></script>
 </head>
 
@@ -159,7 +161,9 @@
 					</section>
 					<section class="panel-section fields-section">
 						<div class="section-heading">
-							<h2>Merge fields</h2>
+							<h2>
+								Merge fields
+							</h2>
 							<button class="text-button" data-view="data">
 								Change data
 							</button>
@@ -172,7 +176,9 @@
 					</section>
 					<section class="panel-section layers-section">
 						<div class="section-heading">
-							<h2>Layers</h2>
+							<h2>
+								Layers
+							</h2>
 							<span id="layerCount" class="muted small"></span>
 						</div>
 						<div id="layers" class="layers" aria-label="Card layers"></div>
@@ -285,8 +291,12 @@
 				</div>
 				<aside class="right-panel" aria-label="Object properties">
 					<div class="inspector-heading">
-						<h2 id="inspectorTitle">Card settings</h2>
-						<span id="objectType" class="tag">PAGE</span>
+						<h2 id="inspectorTitle">
+							Card settings
+						</h2>
+						<span id="objectType" class="tag">
+							PAGE
+						</span>
 					</div>
 					<div id="emptyInspector" class="panel-section">
 						<p class="muted">
@@ -319,27 +329,10 @@
 							</p>
 							<label>
 								Font
-								<select id="fontFamily">
-									<optgroup label="System fonts">
-										<option>Arial</option>
-										<option>Verdana</option>
-										<option>Georgia</option>
-										<option>Times New Roman</option>
-										<option>Trebuchet MS</option>
-										<option>Courier New</option>
-									</optgroup>
-									<optgroup label="Google Fonts - loads on selection">
-										<option>Inter</option>
-										<option>Roboto</option>
-										<option>Open Sans</option>
-										<option>Montserrat</option>
-										<option>Lato</option>
-										<option>Oswald</option>
-										<option>Merriweather</option>
-										<option>Libre Barcode 39</option>
-									</optgroup>
-								</select>
+								<select id="fontFamily"></select>
 							</label>
+							<button id="moreFonts" class="text-button font-picker-open">More fonts…</button>
+							<p id="fontStatus" class="muted small" role="status" hidden></p>
 							<p id="barcodeHint" class="muted small" hidden>
 								Wrap your value in asterisks:
 								<code>*&lt;&lt;RecordID&gt;&gt;*</code>
@@ -479,7 +472,9 @@
 			<section id="view-data" class="data-view" role="tabpanel" aria-labelledby="tab-data" hidden>
 				<div class="view-heading">
 					<div>
-						<h1>Import your data</h1>
+						<h1>
+							Import your data
+						</h1>
 						<p>
 							Import your spreadsheet. The first row becomes your merge fields.
 						</p>
@@ -496,15 +491,21 @@
 						<svg>
 							<use href="#i-upload" />
 						</svg>
-						<h2>Drop a spreadsheet here</h2>
-						<p>CSV, XLS, or XLSX - up to 20 MB</p>
+						<h2>
+							Drop a spreadsheet here
+						</h2>
+						<p>
+							CSV, XLS, or XLSX - up to 20 MB
+						</p>
 						<button id="chooseData">Choose file</button>
 						<span class="muted small">
 							Files are processed on your device.
 						</span>
 					</div>
 					<div class="import-notes">
-						<h2>Spreadsheet setup:</h2>
+						<h2>
+							Spreadsheet setup:
+						</h2>
 						<ol>
 							<li>
 								Give each column a unique heading in row 1.
@@ -533,7 +534,9 @@
 				<div class="data-table-panel">
 					<div class="table-toolbar">
 						<div>
-							<h2 id="dataTitle">Sample records</h2>
+							<h2 id="dataTitle">
+								Sample records
+							</h2>
 							<p id="dataSummary" class="muted small"></p>
 						</div>
 						<div class="inline-actions">
@@ -563,8 +566,12 @@
 			</section>
 			<section id="view-print" class="print-view" role="tabpanel" aria-labelledby="tab-print" hidden>
 				<aside class="print-sidebar">
-					<span class="eyebrow">READY FOR THE PRINTER</span>
-					<h1>Print Setup</h1>
+					<span class="eyebrow">
+						READY FOR THE PRINTER
+					</span>
+					<h1>
+						Print Setup
+					</h1>
 					<p class="muted">
 						One record per card, left to right and top to bottom.
 					</p>
@@ -581,7 +588,9 @@
 						</div>
 					</div>
 					<div class="panel-section">
-						<h2>Records to print</h2>
+						<h2>
+							Records to print
+						</h2>
 						<div class="property-grid">
 							<label>
 								From
@@ -602,7 +611,9 @@
 						</div>
 					</div>
 					<div class="panel-section">
-						<h2>Printer alignment</h2>
+						<h2>
+							Printer alignment
+						</h2>
 						<div class="property-grid">
 							<label>
 								Horizontal (mm)
@@ -628,7 +639,9 @@
 						<span>
 							Margins: None - Headers &amp; footers: Off
 						</span>
-						<span>Background graphics: On</span>
+						<span>
+							Background graphics: On
+						</span>
 					</div>
 					<button id="preparePrint" class="primary full-width">
 						<svg>
@@ -641,7 +654,9 @@
 				<div class="sheet-workspace">
 					<div class="sheet-toolbar">
 						<div>
-							<h2>Sheet preview</h2>
+							<h2>
+								Sheet preview
+							</h2>
 							<span id="printSummary" class="muted small"></span>
 						</div>
 						<div class="inline-actions">
@@ -671,12 +686,16 @@
 			<span aria-hidden="true"> - </span>
 			<span>
 				Card Studio
-				<span class="version">v1.0</span>
+				<span class="version">
+					v1.0
+				</span>
 			</span>
 			<button id="helpButton" class="text-button">
 				Quick guide &amp; shortcuts
 			</button>
-			<span>Local design. Local data.</span>
+			<span>
+				Local design. Local data.
+			</span>
 		</footer>
 	</div>
 	<input id="dataFile" type="file" accept=".csv,.xls,.xlsx" hidden />
@@ -685,8 +704,12 @@
 	<dialog id="layoutsDialog">
 		<div class="dialog-heading">
 			<div>
-				<span class="eyebrow">YOUR DESIGNS</span>
-				<h2>Saved layouts</h2>
+				<span class="eyebrow">
+					YOUR DESIGNS
+				</span>
+				<h2>
+					Saved layouts
+				</h2>
 			</div>
 			<button data-close class="icon-button" aria-label="Close">
 				×
@@ -711,9 +734,72 @@
 		</div>
 		<div id="savedLayouts" class="saved-layouts"></div>
 	</dialog>
+
+	<dialog id="fontsDialog" class="fonts-dialog" aria-labelledby="fontsTitle">
+		<div class="dialog-heading">
+			<h2 id="fontsTitle">
+				Choose a font
+			</h2>
+			<button data-close class="icon-button" aria-label="Close font picker">×</button>
+		</div>
+		<div class="font-picker-scroll">
+			<fieldset id="fontPickerControls" class="font-picker-controls">
+				<div class="font-source-buttons" aria-label="Font sources">
+					<button type="button" data-font-tab="google" aria-pressed="true">Google Fonts</button>
+					<button type="button" data-font-tab="local" aria-pressed="false">Local fonts</button>
+				</div>
+				<section id="googleFontPanel" aria-label="Google Fonts search">
+					<div class="font-search-row">
+						<label>Search families<input id="googleFontSearch" type="search" placeholder="Search fonts, e.g. Playfair Display" maxlength="120" /></label>
+						<label>Category<select id="googleFontCategory">
+								<option value="">All categories</option>
+							</select></label>
+					</div>
+					<div id="googleFontResults" class="font-results" aria-label="Matching font families"></div>
+					<div class="font-results-footer">
+						<span id="googleFontCount" class="muted small" role="status"></span>
+						<div><button id="googleFontsPrev" type="button" aria-label="Previous fonts">‹</button><button id="googleFontsNext" type="button" aria-label="Next fonts">›</button></div>
+					</div>
+					<p class="muted small">
+						Choose a family to preview it. For a newly added family, enter its exact Google Fonts name.
+					</p>
+					<button id="previewGoogleName" type="button" class="text-button">Preview the entered name</button>
+				</section>
+				<section id="localFontPanel" aria-label="Local fonts" hidden>
+					<label>Installed font name<input id="installedFontName" placeholder="Team 401" maxlength="120" /></label>
+					<button id="loadInstalledFont" type="button">Preview installed font</button>
+					<p class="muted small">
+						Use the full font name shown on your computer. If the browser cannot find it, import the font file below.
+					</p>
+					<hr />
+					<label>Font file<input id="localFontFile" type="file" accept=".ttf,.otf,.woff,.woff2" /></label>
+					<label>Name in your font menu<input id="localFontLabel" maxlength="120" placeholder="e.g. Team 401" /></label>
+					<button id="importFontFile" type="button">Import font file</button>
+					<p class="muted small">
+						TTF, OTF, WOFF, or WOFF2, up to 20 MB. Imported files are saved in this browser. Exported layouts remember the font but do not include its file; import the same file on another computer. Bold and italic may be synthesized from the imported face.
+					</p>
+				</section>
+			</fieldset>
+		</div>
+		<div class="font-preview-box">
+			<strong id="fontPreviewName">Font preview</strong>
+			<p id="fontPreview">
+				The quick brown fox jumps over the lazy dog. 0123456789
+			</p>
+		</div>
+		<p id="fontPickerStatus" class="muted small" role="status">
+			Choose a font to preview.
+		</p>
+		<div class="dialog-actions">
+			<button id="usePickedFont" class="primary" disabled>Use this font</button>
+		</div>
+	</dialog>
+
 	<dialog id="helpDialog">
 		<div class="dialog-heading">
-			<h2>A quick guide</h2>
+			<h2>
+				A quick guide
+			</h2>
 			<button data-close class="icon-button" aria-label="Close">
 				×
 			</button>
@@ -740,7 +826,9 @@
 				Choose your paper stock, review the sheet preview, test on plain paper, then print at 100% on the matching paper size. Turn off headers and footers and enable background graphics.
 			</li>
 		</ol>
-		<h3>Keyboard shortcuts</h3>
+		<h3>
+			Keyboard shortcuts
+		</h3>
 		<p>
 			Arrow keys: move 0.01 in - Shift + arrows: move 0.1 in
 			<br />
@@ -755,7 +843,9 @@
 		</p>
 	</dialog>
 	<dialog id="confirmDialog">
-		<h2 id="confirmTitle">Continue?</h2>
+		<h2 id="confirmTitle">
+			Continue?
+		</h2>
 		<p id="confirmMessage"></p>
 		<div class="dialog-actions">
 			<button id="confirmNo">Cancel</button>

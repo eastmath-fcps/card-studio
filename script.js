@@ -19,25 +19,9 @@
 	const MAX_ROWS = 10000,
 		MAX_OBJECTS = 100,
 		MAX_CARDS = 5000;
-	const GOOGLE_FONTS = [
-		'Inter',
-		'Roboto',
-		'Open Sans',
-		'Montserrat',
-		'Lato',
-		'Oswald',
-		'Merriweather',
-		'Libre Barcode 39',
-	];
-	const FONTS = [
-		'Arial',
-		'Verdana',
-		'Georgia',
-		'Times New Roman',
-		'Trebuchet MS',
-		'Courier New',
-		...GOOGLE_FONTS,
-	];
+	const Fonts = typeof module !== 'undefined' && module.exports
+		? require('./fonts.js') : globalThis.CardStudioFonts;
+
 	const clone = (value) => JSON.parse(JSON.stringify(value));
 	const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 	const round = (v, digits = 3) => Number(v.toFixed(digits));
@@ -243,10 +227,10 @@
 		};
 	}
 	function validateLayout(payload) {
-		if (!payload || payload.format !== 'card-studio-layout' || ![1, 2].includes(payload.version))
-			throw Error('This is not a supported Card Studio layout (version 1 or 2).');
+		if (!payload || payload.format !== 'card-studio-layout' || ![1, 2, 3].includes(payload.version))
+			throw Error('This is not a supported Card Studio layout (version 1, 2, or 3).');
 		const l = payload.layout;
-		if (!l || (payload.version === 2 && typeof l.templateId !== 'string'))
+		if (!l || (payload.version >= 2 && typeof l.templateId !== 'string'))
 			throw Error('The layout is missing its paper-stock selection.');
 		// Version 1 layouts always meant Avery 5911 - they predated other templates
 		const template = Templates.get(payload.version === 1 ? Templates.defaultId : l.templateId);
@@ -289,11 +273,11 @@
 				opacity: number(o.opacity, 0, 1),
 			};
 			if (o.type === 'text') {
-				if (!FONTS.includes(o.font) || !['left', 'center', 'right'].includes(o.align))
+				if (!['left', 'center', 'right'].includes(o.align))
 					throw Error('A text style is unsupported.');
 				Object.assign(out, {
 					text: str(o.text, 20000),
-					font: o.font,
+					...Fonts.normalize(o),
 					fontSize: number(o.fontSize, 6, 96),
 					color: color(o.color),
 					align: o.align,
@@ -371,7 +355,8 @@
 		h,
 		fontSize,
 		font: 'Arial',
-		color: '#33465e',
+		fontSource: 'system',
+		color: '#000000',
 		bold: false,
 		italic: false,
 		underline: false,
@@ -698,7 +683,8 @@
 		if (o.type === 'text') {
 			const inner = el('div', 'text-inner', merged && row ? merge(o.text, row) : o.text);
 			Object.assign(inner.style, {
-				fontFamily: `"${o.font}", ${['Georgia', 'Times New Roman', 'Merriweather'].includes(o.font) ? 'serif' : o.font === 'Courier New' ? 'monospace' : 'sans-serif'}`,
+				fontFamily: fontManager.family(o),
+				lineHeight: fontManager.lineHeight(o, inner.textContent),
 				fontSize: `${o.fontSize}pt`,
 				color: o.color,
 				fontWeight: o.font !== 'Libre Barcode 39' && o.bold ? '700' : '400',
@@ -801,7 +787,8 @@
 		$('objOpacity').value = Math.round(o.opacity * 100);
 		if (o.type === 'text') {
 			$('textContent').value = o.text;
-			$('fontFamily').value = o.font;
+			fontManager.populate($('fontFamily'), o, state.layout.objects);
+			showMessage('fontStatus', fontManager.messages([o]).join(' '));
 			$('barcodeHint').hidden = o.font !== 'Libre Barcode 39';
 			$('fontSize').value = o.fontSize;
 			$('textColor').value = o.color;
@@ -860,7 +847,7 @@
 		];
 	}
 	function designWarnings() {
-		const messages = [],
+		const messages = fontManager.messages(state.layout.objects),
 			missing = missingFields();
 		if (missing.length)
 			messages.push(
@@ -896,6 +883,7 @@
 	function setRecord(index) {
 		state.record = clamp(Math.trunc(index) || 0, 0, Math.max(0, state.rows.length - 1));
 		renderCanvas();
+		ensureAllFonts().then(renderCanvas).catch((error) => notify(error.message));
 	}
 	function addObject(o) {
 		if (state.layout.objects.length >= MAX_OBJECTS) {
@@ -1060,10 +1048,6 @@
 			o[key] = options.scale ? value * options.scale : value;
 			checkpoint();
 			renderDesign();
-			if (key === 'font')
-				ensureFont(o.font)
-					.then(() => renderCanvas())
-					.catch((error) => notify(error.message));
 		});
 	}
 	for (const [id, key, min, max] of [
@@ -1079,7 +1063,6 @@
 	bindProperty('objOpacity', 'opacity', 'number', { min: 0, max: 100, scale: 0.01 });
 	for (const [id, key] of [
 		['objectName', 'name'],
-		['fontFamily', 'font'],
 		['textColor', 'color'],
 		['textAlign', 'align'],
 		['imageFit', 'fit'],
@@ -1137,61 +1120,27 @@
 		}
 	});
 
-	// Fonts are requested only by family name: merged text is never included in a network request. System fonts always work without a CDN.
-	const fontPromises = new Map();
-	function ensureFont(font) {
-		if (!GOOGLE_FONTS.includes(font)) return Promise.resolve();
-		if (fontPromises.has(font)) return fontPromises.get(font);
-		const promise = new Promise((resolve, reject) => {
-			const link = document.createElement('link');
-			link.rel = 'stylesheet';
-			// Barcode 39 supplies only a regular face; requesting other axes fails.
-			const variants = font === 'Libre Barcode 39' ? '' : ':ital,wght@0,400;0,700;1,400;1,700';
-			link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font).replace(/%20/g, '+')}${variants}&display=swap`;
-			let done = false;
-			const fail = () => {
-				if (done) return;
-				done = true;
-				clearTimeout(timeout);
-				link.remove();
-				fontPromises.delete(font);
-				reject(Error(`“${font}” could not load. Choose a system font or check your connection.`));
-			};
-			const timeout = setTimeout(fail, 15000);
-			link.onerror = fail;
-			link.onload = async () => {
-				try {
-					const loaded = await Promise.all(
-						(font === 'Libre Barcode 39' ? ['400'] : ['400', '700', 'italic 400', 'italic 700']).map((weight) =>
-							document.fonts.load(`${weight} 16px "${font}"`)
-						)
-					);
-					if (!loaded.every((list) => list.length)) {
-						fail();
-						return;
-					}
-					if (!done) {
-						done = true;
-						clearTimeout(timeout);
-						resolve();
-					}
-				} catch {
-					fail();
-				}
-			};
-			document.head.append(link);
-		});
-		fontPromises.set(font, promise);
-		return promise;
-	}
+	const fontManager = Fonts.create();
 	async function ensureAllFonts() {
-		await Promise.all(
-			[...new Set(state.layout.objects.filter((o) => o.type === 'text').map((o) => o.font))].map(
-				ensureFont
-			)
-		);
+		const results = await Promise.allSettled(state.layout.objects.filter((o) => o.type === 'text').map(
+			(o) => fontManager.loadText(o, merge(o.text, state.rows[state.record] || {}))
+		));
+		const errors = results.filter((r) => r.status === 'rejected').map((r) => r.reason.message);
+		designWarnings();
+		if (selected()?.type === 'text') showMessage('fontStatus', fontManager.messages([selected()]).join(' '));
+		if (errors.length) throw Error([...new Set(errors)].join(' '));
 		await document.fonts.ready;
 	}
+	function applyFont(spec) {
+		const o = selected();
+		if (!o || o.type !== 'text') return;
+		delete o.fontId;
+		Object.assign(o, Fonts.normalize(spec));
+		checkpoint();
+		renderDesign();
+		ensureAllFonts().then(renderCanvas).catch((error) => notify(error.message, 8000));
+	}
+
 	async function importImage(file) {
 		if (!file) return;
 		const replacementId = imageReplacement;
@@ -1497,7 +1446,7 @@
 		});
 	}
 	function payload(layout = state.layout) {
-		return { format: 'card-studio-layout', version: 2, layout: clone(layout) };
+		return { format: 'card-studio-layout', version: 3, layout: clone(layout) };
 	}
 	async function saveLayout(copy = false) {
 		if (saving) return;
@@ -1762,7 +1711,7 @@
 			$('sheetPage').textContent = `${state.printPage + 1} / ${state.plan.pages}`;
 			$('printSummary').textContent =
 				`${state.plan.count.toLocaleString()} cards - ${state.plan.pages} sheet${state.plan.pages === 1 ? '' : 's'}${state.sample ? ' - Sample records' : ''}`;
-			const warnings = [];
+			const warnings = fontManager.messages(state.layout.objects);
 			if (state.layout.objects.some((o) => outsideCard(o, currentTemplate())))
 				warnings.push('Objects extend beyond the card outline and may be clipped. Review the design before printing.');
 			if (state.sample)
@@ -1821,6 +1770,8 @@
 		art.style.height = `${state.layout.height * DPI}px`;
 		root.append(art);
 		for (let rowIndex = plan.from - 1; rowIndex < plan.to; rowIndex++) {
+			await Promise.all(state.layout.objects.filter((o) => o.type === 'text').map((o) =>
+				fontManager.loadText(o, merge(o.text, state.rows[rowIndex]))));
 			renderArtwork(art, state.rows[rowIndex]);
 			for (const node of art.querySelectorAll('.overflow')) {
 				const o = state.layout.objects.find((o) => o.id === node.dataset.id);
@@ -2196,6 +2147,12 @@
 		}
 		$(id).addEventListener('change', () => changeTemplate($(id).value));
 	}
+	// A new weight or language subset can arrive after the first text measurement.
+	document.fonts.addEventListener('loadingdone', () => {
+		if (state.view === 'design') renderCanvas();
+		else if (state.view === 'print' && !state.printBusy && !state.printReady) updateSheetPreview();
+	});
+	fontManager.initPicker({ apply: applyFont, refresh: renderDesign, objects: () => state.layout.objects });
 	state.history = [fingerprint()];
 	state.savedFingerprint = fingerprint();
 	state.selected = state.layout.objects.find((o) => o.name === 'Name').id;

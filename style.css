@@ -10,7 +10,7 @@
 	--orange: #bf7145;
 	--danger: #ad3e32;
 	--shadow: 0 15px 50px #33465e15;
-	font-family: Inter, Arial, sans-serif;
+	font-family: Arial, sans-serif;
 	color: var(--ink);
 	background: var(--bg);
 	font-size: 14px;
@@ -2272,4 +2272,128 @@ dialog::backdrop {
 	.print-view {
 		grid-template-columns: 250px minmax(0, 1fr);
 	}
+}
+
+.font-picker-open {
+	margin: -4px 0 8px;
+}
+
+.fonts-dialog {
+	width: 740px;
+}
+
+.font-picker-controls {
+	border: 0;
+	margin: 0;
+	padding: 0;
+	min-width: 0;
+}
+
+.font-source-buttons {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.font-source-buttons [aria-pressed='true'] {
+	background: var(--pale);
+	border-color: var(--accent);
+}
+
+.font-search-row {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	gap: 12px;
+}
+
+.font-results {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 5px;
+	max-height: 230px;
+	overflow-y: auto;
+}
+
+.font-results button {
+	justify-content: flex-start;
+	text-align: left;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	font-size: 11px;
+}
+
+.font-results-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.font-results-footer button {
+	margin-left: 4px;
+}
+
+.font-preview-box {
+	padding: 14px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	margin-top: 16px;
+}
+
+#fontPreview {
+	font-size: 28px;
+	line-height: 1.4;
+	overflow-wrap: anywhere;
+	margin: 10px 0 0;
+}
+
+#fontPickerStatus {
+	overflow-wrap: anywhere;
+}
+
+.fonts-dialog .dialog-actions {
+	margin-top: 12px;
+}
+
+#localFontPanel hr {
+	border: 0;
+	border-top: 1px solid var(--line);
+	margin: 16px 0;
+}
+
+@media (max-width: 600px) {
+	.font-search-row {
+		grid-template-columns: 1fr;
+		gap: 0;
+	}
+
+	.font-results {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		max-height: 180px;
+	}
+}
+
+.fonts-dialog[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.fonts-dialog .dialog-heading,
+.fonts-dialog .dialog-actions,
+.font-preview-box,
+#fontPickerStatus {
+	flex-shrink: 0;
+}
+
+.fonts-dialog .font-picker-scroll {
+	flex: 1 1 auto;
+	min-height: 100px;
+	overflow-y: auto;
+	padding-right: 4px;
+}
+
+#fontPreview {
+	max-height: 95px;
+	overflow-y: auto;
 }
