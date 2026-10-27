@@ -5,9 +5,11 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta name="theme-color" content="#33465e" />
-	<meta name="description" content="Design and merge business cards in the browser. Print on Avery 5911 business card sheets." />
+	<meta name="description" content="Design and merge cards and labels in the browser." />
 	<title>Card Studio - Design & merge</title>
 	<link rel="stylesheet" href="style.css" />
+	<style id="pageSizeStyle"></style>
+	<script src="templates.js" defer></script>
 	<script src="script.js" defer></script>
 </head>
 
@@ -113,15 +115,29 @@
 				</button>
 			</div>
 			<span class="stock-badge">
-				AVERY 5911
-				<span>3½ × 2 in - 10 per sheet</span>
+				<b id="stockName">
+					AVERY 5911
+				</b>
+				<span id="stockSummary">
+					3½ × 2 in - 10 per sheet
+				</span>
 			</span>
 		</nav>
 		<main>
 			<section id="view-design" class="design-view" role="tabpanel" aria-labelledby="tab-design">
 				<aside class="left-panel" aria-label="Design tools">
+					<section class="panel-section stock-settings">
+						<label for="paperStock">Paper stock</label>
+						<select id="paperStock" aria-describedby="stockDescription stockSwitchHint"></select>
+						<p id="stockDescription" class="muted small"></p>
+						<p id="stockSwitchHint" class="muted small">
+							Objects keep their size and position when switching stock.
+						</p>
+					</section>
 					<section class="panel-section">
-						<div class="section-label">ADD TO YOUR CARD</div>
+						<div class="section-label">
+							DESIGN ELEMENTS
+						</div>
 						<div class="add-tools">
 							<button id="addText">
 								<svg>
@@ -208,7 +224,9 @@
 						</label>
 					</div>
 					<div class="canvas-area" id="canvasArea">
-						<div class="canvas-measure">3½ inches</div>
+						<div id="canvasMeasure" class="canvas-measure">
+							3½ × 2 in
+						</div>
 						<div id="canvasFrame" class="canvas-frame">
 							<div id="cardCanvas" class="card-canvas" tabindex="0" role="group" aria-label="Card design. Select an object to edit it. Arrow keys move the selected object.">
 								<div id="cardArtwork" class="card-artwork"></div>
@@ -253,7 +271,9 @@
 					<div class="workspace-footer">
 						<span>
 							<span class="guide-swatch"></span>
-							Dashed line = ⅛-inch safe area - does not print
+							<span id="safeGuideCaption">
+								Dashed line = ⅛-inch safe area - does not print
+							</span>
 						</span>
 						<button class="text-button" data-view="print">
 							Preview sheets
@@ -553,8 +573,11 @@
 							<use href="#i-card" />
 						</svg>
 						<div>
-							<strong>Avery 5911</strong>
-							<span>Letter - 10 cards - 3½ × 2 in</span>
+							<label for="printPaperStock">Paper stock</label>
+							<select id="printPaperStock" aria-describedby="printStockSummary"></select>
+							<span id="printStockSummary">
+								Letter - 10 per sheet - 3½ × 2 in
+							</span>
 						</div>
 					</div>
 					<div class="panel-section">
@@ -574,26 +597,7 @@
 							</label>
 							<label>
 								First sheet starts at
-								<select id="startSlot">
-									<option value="0">
-										Card 1 - top left
-									</option>
-									<option value="1">
-										Card 2 - top right
-									</option>
-									<option value="2">Card 3</option>
-									<option value="3">Card 4</option>
-									<option value="4">Card 5</option>
-									<option value="5">Card 6</option>
-									<option value="6">Card 7</option>
-									<option value="7">Card 8</option>
-									<option value="8">
-										Card 9 - bottom left
-									</option>
-									<option value="9">
-										Card 10 - bottom right
-									</option>
-								</select>
+								<select id="startSlot"></select>
 							</label>
 						</div>
 					</div>
@@ -618,7 +622,9 @@
 					</div>
 					<div class="print-instructions">
 						<strong>In the print dialog</strong>
-						<span>Letter paper - Portrait - 100% scale</span>
+						<span id="printPaperInstructions">
+							Letter paper - Portrait - 100% scale
+						</span>
 						<span>
 							Margins: None - Headers &amp; footers: Off
 						</span>
@@ -731,7 +737,7 @@
 			</li>
 			<li>
 				<strong>Print.</strong>
-				Review the sheet preview, test on plain paper, then print at 100% on Letter paper. Turn off headers and footers and enable background graphics.
+				Choose your paper stock, review the sheet preview, test on plain paper, then print at 100% on the matching paper size. Turn off headers and footers and enable background graphics.
 			</li>
 		</ol>
 		<h3>Keyboard shortcuts</h3>

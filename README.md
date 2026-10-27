@@ -1,10 +1,25 @@
 # Card Studio
 
-A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It prints on Avery 5911 sheets: ten 3.5 × 2-inch cards on US Letter paper. The interface starts with an editable example design and twelve fictional sample records.
+A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It currently prints on Avery 5911 business cards and Avery 5523/58163 labels, with selectable paper stock. The interface starts with an editable example design and twelve fictional sample records.
 
 ## Try it
 
 Head over to [Card Studio](https://eastmath-fcps.github.io/card-studio/) to check it out!
+
+## Choose paper stock
+
+Use **Paper stock** in **Design card** or **Preview & print**. Both controls select the same stock for the current layout.
+
+| Paper stock | Card/label size | Page | Arrangement |
+| --- | --- | --- | --- |
+| Avery 5911 | 3.5 × 2 inches | US Letter | 2 columns × 5 rows; no gaps |
+| Avery 5523/58163 | 4 × 2 inches | US Letter | 2 columns × 5 rows; gap between columns |
+
+The selected stock controls the canvas dimensions, rounded label corners, safe-area guide, sheet preview, starting-slot choices, alignment test, and printing. It is included in saved and exported layouts.
+
+Switching stock **preserves every object's size, position, and style**. Review the design after switching: objects beyond the new outline are flagged in both Design and Print and may be clipped. Background color fills the new card/label size. Stock changes can be undone/redone. **New** starts a blank design using the currently selected stock.
+
+When the physical geometry changes, printer offsets reset to zero and the starting position resets to the first card. These session settings are not part of the saved layout or Undo history. Run an alignment test on the stock you intend to use.
 
 ## Import your records
 
@@ -66,7 +81,7 @@ Text-editing controls keep their normal keyboard behavior.
 
 **Save layout** stores the current design in this browser's IndexedDB. Change its name in the header. **Layouts** opens saved designs, makes independent copies, imports a layout file, or deletes a saved layout. **Save current as a copy** saves the current design under a new identity and switches to that copy.
 
-**Export** downloads a versioned `.cardlayout.json` file. It includes object positions, styles, static text, background, and embedded images. It excludes the spreadsheet rows and workbook. **Caution: Any personal information you manually type into static text or import as an image is part of the saved design.**
+**Export** downloads a versioned `.cardlayout.json` file. It includes the paper-stock ID, card dimensions, object positions, styles, static text, background, and embedded images. It excludes the spreadsheet rows and workbook. **Caution: Any personal information you manually type into static text or import as an image is part of the saved design.**
 
 Export files for backups, sharing with colleagues, or moving to a different computer. Import through **Layouts → Import layout**, then save the imported design. Re-import the current spreadsheet separately.
 
@@ -74,10 +89,10 @@ Browser saves belong to this browser profile and site origin. They do not sync b
 
 ## Preview and print
 
-1. Import your real records and check the design against several records, especially long names.
+1. Select your paper stock, import your real records, and check the design against several records, especially long names.
 2. Open **Preview & print**. Choose the record range, number of copies per record, and first available card on the first sheet.
 3. Review the sheet preview. Records fill left to right and top to bottom; copies of a record are adjacent. Starting slots apply only to the first sheet; remaining slots on the last sheet are blank.
-4. Use **Print alignment test** on plain Letter paper. Hold it against the perforated stock to check placement. Positive horizontal/vertical adjustments move right/down; negative values move left/up. These settings apply to the current session, not the saved design.
+4. Use **Print alignment test** on plain Letter paper. Hold it against your card or label stock to check placement. Positive horizontal/vertical adjustments move right/down; negative values move left/up. These settings apply to the current session, not the saved design.
 5. Click **Print cards / Save PDF**. The app loads the fonts and checks all selected records for missing merge fields and overflowing text before opening the print dialog.
 6. Set **Letter**, **Portrait**, **100% / Actual size**, **Margins: None**, **Headers and footers: Off**, and **Background graphics: On**. Print single-sided. Choose **Save as PDF** if you want a PDF first.
 
@@ -85,7 +100,7 @@ The app cannot change your printer driver settings. Do not use Fit to page or a 
 
 ## Dependencies and local hosting
 
-The application itself consists of `index.html`, `style.css`, and `script.js`. No npm installation is needed to run it.
+The application itself consists of `index.html`, `style.css`, `templates.js`, and `script.js`. Keep all four files together; `templates.js` must load before `script.js` (and does by default).
 
 ### Excel reader
 
@@ -114,3 +129,18 @@ Select **Libre Barcode 39** for a text box and enter `*<<RecordID>>*` (replace `
 ## Data handling
 
 The app has no analytics, accounts, upload endpoint, or backend. It reads files through the browser's File API and holds the records in memory. Spreadsheet cells are displayed as literal text, not executable HTML. External library and font providers receive ordinary resource requests, not a spreadsheet upload. Hosting the Excel reader yourself and using system fonts removes those runtime dependency requests.
+
+## Adding paper-stock templates
+
+`templates.js` is the catalog; the editor and print code do not contain product-specific geometry. All measurements are in **inches**.
+
+- `geometries`: page dimensions/name/orientation, card width/height/corner radius, grid rows/columns, left/top margins, horizontal/vertical gaps, and safe-area inset.
+- `stocks`: a unique ID, display name, description, source URL, and a `geometryId`. Products with identical geometry reference the same entry.
+- Keep existing IDs and geometries stable: saved layouts reference the stock ID. Use a new ID for an incompatible format. Unknown IDs are rejected instead of silently printing on the wrong stock.
+
+To add a format, verify its manufacturer's actual template, add its geometry (or reuse a matching one), and add a stock entry. The app derives page size, slot count, pitch, editing limits, and controls from the catalog.
+
+### Geometry sources
+
+- [Avery 5911](https://www.avery.com/templates/5911)
+- [Avery 5523](https://www.avery.com/templates/5523)/[Avery 58163](https://www.avery.com/templates/58163) (these have identical layouts)

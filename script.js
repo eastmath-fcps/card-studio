@@ -2,15 +2,20 @@
 (() => {
 	'use strict';
 	const DPI = 96;
-	const CARD = Object.freeze({ width: 3.5, height: 2 });
-	const STOCK = Object.freeze({
-		width: 8.5,
-		height: 11,
-		left: 0.75,
-		top: 0.5,
-		columns: 2,
-		rows: 5,
+	const Templates = typeof module !== 'undefined' && module.exports
+		? require('./templates.js') : globalThis.CardStudioTemplates;
+	if (!Templates) throw Error('Paper-stock definitions could not load. Check that templates.js is beside script.js.');
+	const DEFAULT_TEMPLATE = Templates.get();
+	const OBJECT_LIMITS = Object.freeze({
+		x: Math.max(...Object.values(Templates.geometries).map((g) => g.card.width)),
+		y: Math.max(...Object.values(Templates.geometries).map((g) => g.card.height)),
 	});
+	const capacity = (template) => template.grid.columns * template.grid.rows;
+	const dimensions = (template) => `${inchText(template.card.width)} × ${inchText(template.card.height)} in`;
+	function inchText(value) {
+		const fraction = { 0.125: '⅛', 0.25: '¼', 0.5: '½', 0.75: '¾' }[value % 1];
+		return fraction ? `${Math.floor(value) || ''}${fraction}` : String(value);
+	}
 	const MAX_ROWS = 10000,
 		MAX_OBJECTS = 100,
 		MAX_CARDS = 5000;
@@ -155,7 +160,7 @@
 		if (!rows.length) notices.push('The headings loaded, but there are no records below them.');
 		return { headers, rows, notices };
 	}
-	function makePlan(total, from, to, copies, skip) {
+	function makePlan(total, from, to, copies, skip, template = DEFAULT_TEMPLATE) {
 		if (
 			![total, from, to, copies, skip].every(Number.isInteger) ||
 			total < 1 ||
@@ -165,7 +170,7 @@
 			copies < 1 ||
 			copies > 100 ||
 			skip < 0 ||
-			skip > 9
+			skip >= capacity(template)
 		)
 			throw Error('Choose a valid record range, 1–100 copies, and a starting card.');
 		const count = (to - from + 1) * copies;
@@ -176,13 +181,28 @@
 		const slots = Array(skip).fill(null);
 		for (let index = from - 1; index < to; index++)
 			for (let copy = 0; copy < copies; copy++) slots.push(index);
-		return { slots, count, pages: Math.ceil(slots.length / 10) };
+		return { slots, count, pages: Math.ceil(slots.length / capacity(template)) };
 	}
-	function cardPosition(slot, offsetX = 0, offsetY = 0) {
+	function cardPosition(slot, offsetX = 0, offsetY = 0, template = DEFAULT_TEMPLATE) {
+		const { card, grid } = template;
 		return {
-			x: STOCK.left + (slot % 2) * CARD.width + offsetX / 25.4,
-			y: STOCK.top + Math.floor(slot / 2) * CARD.height + offsetY / 25.4,
+			x: grid.left + (slot % grid.columns) * (card.width + grid.gapX) + offsetX / 25.4,
+			y: grid.top + Math.floor(slot / grid.columns) * (card.height + grid.gapY) + offsetY / 25.4,
 		};
+	}
+	function outsideCard(o, template) {
+		const { width, height, radius } = template.card;
+		const b = bounds(o);
+		if (b.left < -0.001 || b.top < -0.001 || b.right > width + 0.001 || b.bottom > height + 0.001)
+			return true;
+		if (!radius) return false;
+		const angle = o.rotation * Math.PI / 180;
+		// Check rounded corners when rotating.
+		return [-1, 1].some((sx) => [-1, 1].some((sy) => {
+			const x = o.x + o.w / 2 + sx * o.w / 2 * Math.cos(angle) - sy * o.h / 2 * Math.sin(angle);
+			const y = o.y + o.h / 2 + sx * o.w / 2 * Math.sin(angle) + sy * o.h / 2 * Math.cos(angle);
+			return Math.hypot(x - clamp(x, radius, width - radius), y - clamp(y, radius, height - radius)) > radius + 0.001;
+		}));
 	}
 	function bounds(o) {
 		const angle = (o.rotation * Math.PI) / 180,
@@ -205,11 +225,11 @@
 			ly = -dx * sin + dy * cos;
 		const sx = handle.includes('e') ? 1 : -1,
 			sy = handle.includes('s') ? 1 : -1;
-		let w = clamp(o.w + sx * lx, 0.05, 7),
-			h = clamp(o.h + sy * ly, 0.05, 4);
+		let w = clamp(o.w + sx * lx, 0.05, OBJECT_LIMITS.x * 2),
+			h = clamp(o.h + sy * ly, 0.05, OBJECT_LIMITS.y * 2);
 		if (lock) {
 			const scale = Math.abs(w / o.w - 1) >= Math.abs(h / o.h - 1) ? w / o.w : h / o.h;
-			const safe = clamp(scale, Math.max(0.05 / o.w, 0.05 / o.h), Math.min(7 / o.w, 4 / o.h));
+			const safe = clamp(scale, Math.max(0.05 / o.w, 0.05 / o.h), Math.min(OBJECT_LIMITS.x * 2 / o.w, OBJECT_LIMITS.y * 2 / o.h));
 			w = o.w * safe;
 			h = o.h * safe;
 		}
@@ -223,17 +243,23 @@
 		};
 	}
 	function validateLayout(payload) {
-		if (!payload || payload.format !== 'card-studio-layout' || payload.version !== 1)
-			throw Error('This is not a supported Card Studio layout (version 1).');
+		if (!payload || payload.format !== 'card-studio-layout' || ![1, 2].includes(payload.version))
+			throw Error('This is not a supported Card Studio layout (version 1 or 2).');
 		const l = payload.layout;
+		if (!l || (payload.version === 2 && typeof l.templateId !== 'string'))
+			throw Error('The layout is missing its paper-stock selection.');
+		// Version 1 layouts always meant Avery 5911 - they predated other templates
+		const template = Templates.get(payload.version === 1 ? Templates.defaultId : l.templateId);
+		if (payload.version === 1 && l.templateId !== undefined && l.templateId !== Templates.defaultId)
+			throw Error('Version 1 layouts support Avery 5911 only.');
 		if (
 			!l ||
-			l.width !== CARD.width ||
-			l.height !== CARD.height ||
+			l.width !== template.card.width ||
+			l.height !== template.card.height ||
 			!Array.isArray(l.objects) ||
 			l.objects.length > MAX_OBJECTS
 		)
-			throw Error('The layout must be 3½ × 2 inches with 100 objects or fewer.');
+			throw Error(`The layout must match ${template.name} (${dimensions(template)}) with 100 objects or fewer.`);
 		const color = (v) => {
 			if (typeof v !== 'string' || !/^#[0-9a-f]{6}$/i.test(v))
 				throw Error('A layout color is invalid.');
@@ -255,10 +281,10 @@
 				id: `object-${index}-${uid()}`,
 				type: o.type,
 				name: str(o.name, 80),
-				x: number(o.x, -3.5, 3.5),
-				y: number(o.y, -2, 2),
-				w: number(o.w, 0.05, 7),
-				h: number(o.h, 0.05, 4),
+				x: number(o.x, -OBJECT_LIMITS.x, OBJECT_LIMITS.x),
+				y: number(o.y, -OBJECT_LIMITS.y, OBJECT_LIMITS.y),
+				w: number(o.w, 0.05, OBJECT_LIMITS.x * 2),
+				h: number(o.h, 0.05, OBJECT_LIMITS.y * 2),
 				rotation: number(o.rotation, -180, 180),
 				opacity: number(o.opacity, 0, 1),
 			};
@@ -294,8 +320,9 @@
 			return out;
 		});
 		return {
-			width: CARD.width,
-			height: CARD.height,
+			templateId: template.id,
+			width: template.card.width,
+			height: template.card.height,
 			name: str(l.name, 80) || 'Untitled layout',
 			background: color(l.background),
 			objects,
@@ -311,8 +338,9 @@
 		bounds,
 		resized,
 		validateLayout,
-		CARD,
-		STOCK,
+		Templates,
+		capacity,
+		outsideCard,
 	};
 	if (typeof module !== 'undefined' && module.exports) module.exports = Core;
 	if (typeof document === 'undefined') return;
@@ -370,8 +398,9 @@
 	function starterLayout() {
 		return {
 			name: 'Starter card',
-			width: CARD.width,
-			height: CARD.height,
+			templateId: Templates.defaultId,
+			width: DEFAULT_TEMPLATE.card.width,
+			height: DEFAULT_TEMPLATE.card.height,
 			background: '#ffffff',
 			objects: [
 				shapeObject('Header banner', 0.125, 0.125, 3.25, 0.37, '#33465e'),
@@ -535,6 +564,60 @@
 		textSelection = { start: 0, end: 0 },
 		workbookFileName = '',
 		dataImportSerial = 0;
+
+	const currentTemplate = () => Templates.get(state.layout.templateId);
+	let displayedTemplateId = null;
+	function syncTemplateUI() {
+		const template = currentTemplate();
+		if (displayedTemplateId === template.id) return;
+		const previous = displayedTemplateId ? Templates.get(displayedTemplateId) : null;
+		displayedTemplateId = template.id;
+		const style = document.documentElement.style;
+		for (const [name, value] of Object.entries({
+			'card-width': template.card.width, 'card-height': template.card.height,
+			'sheet-width': template.page.width, 'sheet-height': template.page.height,
+			'corner-radius': template.card.radius, 'safe-inset': template.safeInset,
+			'safe-radius': Math.max(0, template.card.radius - template.safeInset),
+		})) style.setProperty(`--${name}`, `${value}in`);
+		$('pageSizeStyle').textContent = `@page { size: ${template.page.width}in ${template.page.height}in; margin: 0; }`;
+		for (const id of ['paperStock', 'printPaperStock']) $(id).value = template.id;
+		$('stockName').textContent = template.name.toUpperCase();
+		$('stockSummary').textContent = `${dimensions(template)} - ${capacity(template)} per sheet`;
+		$('stockDescription').textContent = `${template.description}. ${dimensions(template)} - ${capacity(template)} per sheet.`;
+		$('printStockSummary').textContent = `${template.page.name} - ${capacity(template)} per sheet - ${dimensions(template)}`;
+		$('canvasMeasure').textContent = dimensions(template);
+		$('safeGuideCaption').textContent = `Dashed line = ${inchText(template.safeInset)}-inch safe area - does not print`;
+		$('printPaperInstructions').textContent = `${template.page.name} paper - ${template.page.orientation} - 100% scale`;
+		const oldSlot = Number($('startSlot').value) || 0;
+		$('startSlot').replaceChildren(...Array.from({ length: capacity(template) }, (_, slot) => {
+			const option = el('option', '', `Card ${slot + 1} - row ${Math.floor(slot / template.grid.columns) + 1}, column ${slot % template.grid.columns + 1}`);
+			option.value = slot;
+			return option;
+		}));
+		$('startSlot').value = String(Math.min(oldSlot, capacity(template) - 1));
+		if (previous && previous.geometryId !== template.geometryId) {
+			// Printer calibration and a partially used sheet belong to that physical stock.
+			$('offsetX').value = $('offsetY').value = $('startSlot').value = '0';
+		}
+		state.printPage = 0;
+		$('printStatus').textContent = '';
+		for (const [id, min, max] of [
+			['posX', -OBJECT_LIMITS.x, OBJECT_LIMITS.x], ['posY', -OBJECT_LIMITS.y, OBJECT_LIMITS.y],
+			['objWidth', 0.05, OBJECT_LIMITS.x * 2], ['objHeight', 0.05, OBJECT_LIMITS.y * 2],
+		]) { $(id).min = min; $(id).max = max; }
+	}
+	function changeTemplate(id) {
+		if (id === state.layout.templateId) return;
+		const template = Templates.get(id);
+		state.layout.templateId = id;
+		state.layout.width = template.card.width;
+		state.layout.height = template.card.height;
+		checkpoint();
+		renderDesign();
+		if (state.view === 'print') updateSheetPreview();
+		notify(`${template.name} selected. Objects kept their size and position. Check the design and run an alignment test.`);
+	}
+
 	function notify(message, duration = 4800) {
 		$('toast').textContent = message;
 		$('toast').hidden = false;
@@ -584,6 +667,7 @@
 		$('layoutName').value = state.layout.name;
 		markChanged();
 		renderDesign();
+		if (state.view === 'print') updateSheetPreview();
 		updateUndo();
 	}
 	function refreshSelection() {
@@ -741,6 +825,7 @@
 		$('bringForward').disabled = index === state.layout.objects.length - 1;
 	}
 	function renderDesign() {
+		syncTemplateUI();
 		renderCanvas();
 		renderLayers();
 		renderInspector();
@@ -757,10 +842,11 @@
 		const available = Math.max(200, $('canvasArea').clientWidth - 76),
 			requested = $('zoom').value;
 		state.zoom =
-			requested === 'fit' ? Math.min(2.25, available / (CARD.width * DPI)) : Number(requested);
+			requested === 'fit' ? Math.min(2.25, available / (state.layout.width * DPI)) : Number(requested);
 		$('cardCanvas').style.transform = `scale(${state.zoom})`;
-		$('canvasFrame').style.width = `${CARD.width * DPI * state.zoom}px`;
-		$('canvasFrame').style.height = `${CARD.height * DPI * state.zoom}px`;
+		$('canvasFrame').style.width = `${state.layout.width * DPI * state.zoom}px`;
+		$('canvasFrame').style.height = `${state.layout.height * DPI * state.zoom}px`;
+		$('canvasFrame').style.borderRadius = `${currentTemplate().card.radius * DPI * state.zoom}px`;
 	}
 	function missingFields() {
 		const set = new Set(state.headers);
@@ -780,17 +866,9 @@
 			messages.push(
 				`Missing merge fields: ${missing.join(', ')}. Import matching headings or edit the placeholders.`
 			);
-		const clipped = state.layout.objects.filter((o) => {
-			const b = bounds(o);
-			return (
-				b.left < -0.001 ||
-				b.top < -0.001 ||
-				b.right > CARD.width + 0.001 ||
-				b.bottom > CARD.height + 0.001
-			);
-		});
+		const clipped = state.layout.objects.filter((o) => outsideCard(o, currentTemplate()));
 		if (clipped.length)
-			messages.push(`${clipped.length} object(s) extend beyond the card and will be clipped.`);
+			messages.push(`${clipped.length} object(s) extend beyond the card outline and may be clipped. Check the edges before printing.`);
 		if ($('cardArtwork').querySelector('.overflow'))
 			messages.push(
 				'Some text does not fit. Enlarge the text box, reduce the font size, or turn on “Shrink text to fit”.'
@@ -861,8 +939,8 @@
 			...clone(o),
 			id: uid(),
 			name: `${o.name.slice(0, 73)} copy`,
-			x: clamp(o.x + 0.08, -3.5, 3.5),
-			y: clamp(o.y + 0.08, -2, 2),
+			x: clamp(o.x + 0.08, -OBJECT_LIMITS.x, OBJECT_LIMITS.x),
+			y: clamp(o.y + 0.08, -OBJECT_LIMITS.y, OBJECT_LIMITS.y),
 		});
 	}
 	function moveLayer(delta) {
@@ -918,8 +996,8 @@
 		if (!o) return;
 		if (drag.mode === 'move') {
 			const step = $('snapGrid').checked && !e.altKey ? 0.025 : 0.001;
-			o.x = clamp(round(Math.round((b.x + dx) / step) * step), -3.5, 3.5);
-			o.y = clamp(round(Math.round((b.y + dy) / step) * step), -2, 2);
+			o.x = clamp(round(Math.round((b.x + dx) / step) * step), -OBJECT_LIMITS.x, OBJECT_LIMITS.x);
+			o.y = clamp(round(Math.round((b.y + dy) / step) * step), -OBJECT_LIMITS.y, OBJECT_LIMITS.y);
 		} else if (drag.mode === 'rotate') {
 			let degrees =
 				b.rotation +
@@ -931,8 +1009,8 @@
 				o,
 				resized(b, drag.mode, dx, dy, (o.type === 'image' && o.lockAspect) || e.shiftKey)
 			);
-			o.x = clamp(o.x, -3.5, 3.5);
-			o.y = clamp(o.y, -2, 2);
+			o.x = clamp(o.x, -OBJECT_LIMITS.x, OBJECT_LIMITS.x);
+			o.y = clamp(o.y, -OBJECT_LIMITS.y, OBJECT_LIMITS.y);
 		}
 		renderCanvas();
 		renderInspector();
@@ -971,10 +1049,10 @@
 				if (o.type === 'image' && o.lockAspect) {
 					const ratio = o.w / o.h;
 					if (key === 'w') {
-						value = clamp(value, Math.max(0.05, 0.05 * ratio), Math.min(7, 4 * ratio));
+						value = clamp(value, Math.max(0.05, 0.05 * ratio), Math.min(OBJECT_LIMITS.x * 2, OBJECT_LIMITS.y * 2 * ratio));
 						o.h = value / ratio;
 					} else {
-						value = clamp(value, Math.max(0.05, 0.05 / ratio), Math.min(4, 7 / ratio));
+						value = clamp(value, Math.max(0.05, 0.05 / ratio), Math.min(OBJECT_LIMITS.y * 2, OBJECT_LIMITS.x * 2 / ratio));
 						o.w = value * ratio;
 					}
 				}
@@ -989,10 +1067,10 @@
 		});
 	}
 	for (const [id, key, min, max] of [
-		['posX', 'x', -3.5, 3.5],
-		['posY', 'y', -2, 2],
-		['objWidth', 'w', 0.05, 7],
-		['objHeight', 'h', 0.05, 4],
+		['posX', 'x', -OBJECT_LIMITS.x, OBJECT_LIMITS.x],
+		['posY', 'y', -OBJECT_LIMITS.y, OBJECT_LIMITS.y],
+		['objWidth', 'w', 0.05, OBJECT_LIMITS.x * 2],
+		['objHeight', 'h', 0.05, OBJECT_LIMITS.y * 2],
 		['objRotation', 'rotation', -180, 180],
 		['fontSize', 'fontSize', 6, 96],
 		['borderWidth', 'borderWidth', 0, 10],
@@ -1045,7 +1123,7 @@
 	$('centerH').addEventListener('click', () => {
 		const o = selected();
 		if (o) {
-			o.x = (CARD.width - o.w) / 2;
+			o.x = (state.layout.width - o.w) / 2;
 			checkpoint();
 			renderDesign();
 		}
@@ -1053,7 +1131,7 @@
 	$('centerV').addEventListener('click', () => {
 		const o = selected();
 		if (o) {
-			o.y = (CARD.height - o.h) / 2;
+			o.y = (state.layout.height - o.h) / 2;
 			checkpoint();
 			renderDesign();
 		}
@@ -1419,7 +1497,7 @@
 		});
 	}
 	function payload(layout = state.layout) {
-		return { format: 'card-studio-layout', version: 1, layout: clone(layout) };
+		return { format: 'card-studio-layout', version: 2, layout: clone(layout) };
 	}
 	async function saveLayout(copy = false) {
 		if (saving) return;
@@ -1633,7 +1711,7 @@
 		if (![offsetX, offsetY].every((v) => Number.isFinite(v) && Math.abs(v) <= 5))
 			throw Error('Alignment adjustments must be between −5 and +5 mm.');
 		return {
-			...makePlan(state.rows.length, from, to, copies, skip),
+			...makePlan(state.rows.length, from, to, copies, skip, currentTemplate()),
 			from,
 			to,
 			copies,
@@ -1644,17 +1722,17 @@
 	}
 	function makeSheet(pageIndex, plan, test = false) {
 		const sheet = el('div', 'print-sheet');
-		for (let slot = 0; slot < 10; slot++) {
-			const index = plan.slots[pageIndex * 10 + slot],
+		for (let slot = 0; slot < capacity(currentTemplate()); slot++) {
+			const index = plan.slots[pageIndex * capacity(currentTemplate()) + slot],
 				card = el('div', 'print-card');
-			const pos = cardPosition(slot, plan.offsetX, plan.offsetY);
+			const pos = cardPosition(slot, plan.offsetX, plan.offsetY, currentTemplate());
 			card.style.left = `${pos.x}in`;
 			card.style.top = `${pos.y}in`;
 			if (test) {
 				card.classList.add('alignment-card');
 				card.append(
 					el('strong', '', `Card ${slot + 1}`),
-					el('small', '', 'Avery 5911 - 3½ × 2 inches'),
+					el('small', '', `${currentTemplate().name} - ${dimensions(currentTemplate())}`),
 					el('small', '', 'Print at 100% / actual size')
 				);
 			} else if (index !== null && index !== undefined) {
@@ -1669,10 +1747,11 @@
 	function fillSheet(sheet, plan, pageIndex) {
 		[...sheet.children].forEach((card, slot) => {
 			const art = card.querySelector('.card-artwork');
-			if (art) renderArtwork(art, state.rows[plan.slots[pageIndex * 10 + slot]]);
+			if (art) renderArtwork(art, state.rows[plan.slots[pageIndex * capacity(currentTemplate()) + slot]]);
 		});
 	}
 	function updateSheetPreview() {
+		syncTemplateUI();
 		state.printReady = false;
 		try {
 			state.plan = printOptions();
@@ -1684,6 +1763,8 @@
 			$('printSummary').textContent =
 				`${state.plan.count.toLocaleString()} cards - ${state.plan.pages} sheet${state.plan.pages === 1 ? '' : 's'}${state.sample ? ' - Sample records' : ''}`;
 			const warnings = [];
+			if (state.layout.objects.some((o) => outsideCard(o, currentTemplate())))
+				warnings.push('Objects extend beyond the card outline and may be clipped. Review the design before printing.');
 			if (state.sample)
 				warnings.push(
 					'You are previewing fictional sample records. Import your spreadsheet before printing cards.'
@@ -1720,11 +1801,11 @@
 			Math.max(
 				180,
 				$('sheetPreviewFrame').parentElement.clientWidth - (innerWidth < 600 ? 36 : 80)
-			) / 816
+			) / (currentTemplate().page.width * DPI)
 		);
 		$('sheetPreview').style.transform = `scale(${scale})`;
-		$('sheetPreviewFrame').style.width = `${816 * scale}px`;
-		$('sheetPreviewFrame').style.height = `${1056 * scale}px`;
+		$('sheetPreviewFrame').style.width = `${currentTemplate().page.width * DPI * scale}px`;
+		$('sheetPreviewFrame').style.height = `${currentTemplate().page.height * DPI * scale}px`;
 	}
 	async function preflight(plan) {
 		const missing = missingFields();
@@ -1737,7 +1818,7 @@
 		root.replaceChildren();
 		// Measure one unscaled card at a time. This is independent of screen zoom.
 		const art = el('div', 'card-artwork');
-		art.style.height = '192px';
+		art.style.height = `${state.layout.height * DPI}px`;
 		root.append(art);
 		for (let rowIndex = plan.from - 1; rowIndex < plan.to; rowIndex++) {
 			renderArtwork(art, state.rows[rowIndex]);
@@ -1796,7 +1877,7 @@
 			state.printReady = true;
 			$('printStatus').textContent = test
 				? 'Alignment test ready. Use plain paper and 100% scale.'
-				: `${plan.count} cards ready. Use Letter paper, 100% scale, and no margins.`;
+				: `${plan.count} cards ready. Use ${currentTemplate().page.name} paper, 100% scale, and no margins.`;
 			window.print();
 		} catch (e) {
 			state.printReady = false;
@@ -1816,7 +1897,7 @@
 				el(
 					'p',
 					'print-error',
-					'Use Card Studio’s “Preview & print” tab and “Print cards / Save PDF” button to prepare and check your cards first.'
+					'Use the “Preview & print” tab and “Print cards / Save PDF” button to prepare and check your cards first.'
 				)
 			);
 		}
@@ -2016,8 +2097,9 @@
 			if (!(await allowReplace())) return;
 			await loadLayout({
 				name: 'Untitled layout',
-				width: CARD.width,
-				height: CARD.height,
+				templateId: state.layout.templateId,
+				width: state.layout.width,
+				height: state.layout.height,
 				background: '#ffffff',
 				objects: [],
 			});
@@ -2090,8 +2172,8 @@
 			if (e.key === 'ArrowRight') o.x += step;
 			if (e.key === 'ArrowUp') o.y -= step;
 			if (e.key === 'ArrowDown') o.y += step;
-			o.x = round(clamp(o.x, -3.5, 3.5));
-			o.y = round(clamp(o.y, -2, 2));
+			o.x = round(clamp(o.x, -OBJECT_LIMITS.x, OBJECT_LIMITS.x));
+			o.y = round(clamp(o.y, -OBJECT_LIMITS.y, OBJECT_LIMITS.y));
 			checkpoint();
 			renderDesign();
 		}
@@ -2106,6 +2188,14 @@
 		resizeCanvas();
 		resizeSheet();
 	}).observe($('app'));
+	for (const id of ['paperStock', 'printPaperStock']) {
+		for (const stock of Templates.stocks) {
+			const option = el('option', '', `${stock.name} - ${dimensions(Templates.get(stock.id))}`);
+			option.value = stock.id;
+			$(id).append(option);
+		}
+		$(id).addEventListener('change', () => changeTemplate($(id).value));
+	}
 	state.history = [fingerprint()];
 	state.savedFingerprint = fingerprint();
 	state.selected = state.layout.objects.find((o) => o.name === 'Name').id;
