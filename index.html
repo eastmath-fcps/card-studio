@@ -4,9 +4,10 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<meta name="theme-color" content="#33465e" />
+	<meta name="theme-color" content="#34465d" />
 	<meta name="description" content="Design and merge cards and labels in the browser." />
 	<title>Card Studio - Design & merge</title>
+	<link rel="icon" type="image/svg+xml" href="assets/card-studio-icon.svg" />
 	<link rel="stylesheet" href="style.css" />
 	<style id="pageSizeStyle"></style>
 	<script src="templates.js" defer></script>
@@ -66,10 +67,8 @@
 	<div id="app">
 		<header class="app-header">
 			<a class="brand" href="#" id="brand">
-				<span class="brand-mark">
-					<svg>
-						<use href="#i-card" />
-					</svg>
+				<span class="brand-mark" aria-hidden="true">
+					<img src="assets/card-studio-icon.svg" width="39" height="43" alt="" />
 				</span>
 				<span>
 					Card Studio
@@ -840,6 +839,9 @@
 		</p>
 		<p class="muted small">
 			Use Chrome or Edge for the most consistent printing. Google Fonts and the Excel reader load from external services when needed; spreadsheet contents are not sent to those services. Network restrictions may block these resources.
+		</p>
+		<p class="muted small icon-credit">
+			Brand and favicon: “id” by Olivia from <a href="https://thenounproject.com/icon/id-1987656/" target="_blank" rel="noopener noreferrer">Noun Project</a> (<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>), recolored.
 		</p>
 	</dialog>
 	<dialog id="confirmDialog">

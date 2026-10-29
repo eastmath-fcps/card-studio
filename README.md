@@ -171,3 +171,7 @@ To add a format, verify its manufacturer's actual template, add its geometry (or
 - [Avery 5911](https://www.avery.com/templates/5911)
 - [Avery 5523](https://www.avery.com/templates/5523)/[Avery 58163](https://www.avery.com/templates/58163) (these have identical layouts)
 - [Avery 5160](https://www.avery.com/templates/5160)
+
+## Brand icon
+
+The brand mark and favicon use **“id” by Olivia**, from [Noun Project](https://thenounproject.com/icon/id-1987656/), licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). (`assets/noun-id-1987656.png` preserves the original 512-pixel PNG supplied by Noun Project.)

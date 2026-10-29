@@ -293,8 +293,7 @@ small,
 }
 
 .brand-mark {
-	background: var(--ink);
-	color: #fff;
+	color: #34465d;
 	width: 39px;
 	height: 43px;
 	display: grid;
@@ -302,9 +301,11 @@ small,
 	border-radius: 8px;
 }
 
-.brand-mark svg {
-	width: 26px;
-	height: 26px;
+.brand-mark img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
 }
 
 .brand small {
