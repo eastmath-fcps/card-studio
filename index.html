@@ -8,8 +8,13 @@
 	<meta name="description" content="Design and merge cards and labels in the browser." />
 	<title>Card Studio - Design & merge</title>
 	<link rel="icon" type="image/svg+xml" href="assets/card-studio-icon.svg" />
+	<link rel="manifest" href="manifest.webmanifest" />
+	<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-title" content="Card Studio" />
 	<link rel="stylesheet" href="style.css" />
 	<style id="pageSizeStyle"></style>
+	<script src="pwa.js" defer></script>
 	<script src="templates.js" defer></script>
 	<script src="google-fonts.js" defer></script>
 	<script src="fonts.js" defer></script>
@@ -61,6 +66,9 @@
 			</symbol>
 			<symbol id="i-plus" viewBox="0 0 24 24">
 				<path d="M12 4v16M4 12h16" />
+			</symbol>
+			<symbol id="i-install" viewBox="0 0 24 24">
+				<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
 			</symbol>
 		</defs>
 	</svg>
@@ -679,22 +687,33 @@
 			</section>
 		</main>
 		<footer class="app-footer">
-			<a href="https://github.com/eastmath-fcps/card-studio/issues" target="_blank" rel="noopener noreferrer">
-				Report issues on GitHub
-			</a>
-			<span aria-hidden="true"> - </span>
-			<span>
-				Card Studio
-				<span class="version">
-					v1.0
+			<div class="footer-info">
+				<span class="footer-brand">
+					Card Studio
+					<span class="version">
+						v1.1
+					</span>
 				</span>
-			</span>
-			<button id="helpButton" class="text-button">
-				Quick guide &amp; shortcuts
-			</button>
-			<span>
-				Local design. Local data.
-			</span>
+				<span class="footer-privacy">
+					Local design. Local data.
+				</span>
+			</div>
+			<nav class="footer-actions" aria-label="Help and app">
+				<button id="installApp" type="button" class="footer-action install-action" hidden>
+					<svg aria-hidden="true">
+						<use href="#i-install" />
+					</svg>
+					Install app
+				</button>
+				<button id="helpButton" type="button" class="footer-action" title="Quick guide and keyboard shortcuts">Quick guide</button>
+				<a class="footer-action" href="https://github.com/eastmath-fcps/card-studio/issues" target="_blank" rel="noopener noreferrer">
+					Report an issue
+					<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+						<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+					</svg>
+					<span class="sr-only"> on GitHub (opens in a new tab)</span>
+				</a>
+			</nav>
 		</footer>
 	</div>
 	<input id="dataFile" type="file" accept=".csv,.xls,.xlsx" hidden />
@@ -794,6 +813,28 @@
 		</div>
 	</dialog>
 
+	<dialog id="installDialog" aria-labelledby="installTitle" aria-describedby="installDescription">
+		<div class="dialog-heading">
+			<h2 id="installTitle">
+				Install Card Studio
+			</h2>
+			<button id="closeInstallDialog" type="button" class="icon-button" aria-label="Close installation instructions">×</button>
+		</div>
+		<p id="installDescription">
+			Keep Card Studio alongside your other apps and open it in its own window.
+		</p>
+		<ol id="installAppleSteps" class="help-list" hidden>
+			<li>Open this page in <strong>Safari</strong> on your iPhone or iPad.</li>
+			<li>Open the <strong>Share</strong> menu and choose <strong>Add to Home Screen</strong>.</li>
+			<li>If offered, leave <strong>Open as Web App</strong> on, then tap <strong>Add</strong>.</li>
+		</ol>
+		<p id="installError" hidden>
+			The browser could not open the installation prompt. You can look for Install in the browser menu, or try again on your next visit.
+		</p>
+		<p class="muted small">
+			Save your layout before opening the installed app. Import your spreadsheet again in the new window. Internet access is still required.
+		</p>
+	</dialog>
 	<dialog id="helpDialog">
 		<div class="dialog-heading">
 			<h2>
@@ -818,13 +859,25 @@
 			</li>
 			<li>
 				<strong>Save.</strong>
-				Save named layouts in this browser. Export JSON files for backups and sharing. Images are embedded; spreadsheet rows are excluded.
+				Save named layouts in this browser. Export JSON files for backups and sharing. Images are embedded; imported data is excluded.
 			</li>
 			<li>
 				<strong>Print.</strong>
 				Choose your paper stock, review the sheet preview, test on plain paper, then print at 100% on the matching paper size. Turn off headers and footers and enable background graphics.
 			</li>
 		</ol>
+		<h3>
+			Install Card Studio
+		</h3>
+		<p class="small">
+			Choose <strong>Install app</strong> in the footer when it appears. Your browser decides when installation is available; the button may not appear immediately or if the app is already installed.
+		</p>
+		<p class="small">
+			On iPhone or iPad, open this page in Safari and choose <strong>Share → Add to Home Screen</strong>. Leave <strong>Open as Web App</strong> on if offered. In Safari on Mac, choose <strong>File → Add to Dock</strong>.
+		</p>
+		<p class="muted small">
+			The installed app still needs internet access. Save your layout before opening a new app window, then import your spreadsheet again. Saved layouts and imported fonts stay local to your browser or app; export layouts and keep your font files for backups or moving to another device.
+		</p>
 		<h3>
 			Keyboard shortcuts
 		</h3>
@@ -841,7 +894,7 @@
 			Use Chrome or Edge for the most consistent printing. Google Fonts and the Excel reader load from external services when needed; spreadsheet contents are not sent to those services. Network restrictions may block these resources.
 		</p>
 		<p class="muted small icon-credit">
-			Brand and favicon: “id” by Olivia from <a href="https://thenounproject.com/icon/id-1987656/" target="_blank" rel="noopener noreferrer">Noun Project</a> (<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>), recolored.
+			Brand, favicon, and app icons: “id” by Olivia from <a href="https://thenounproject.com/icon/id-1987656/" target="_blank" rel="noopener noreferrer">Noun Project</a> (<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>), recolored and resized.
 		</p>
 	</dialog>
 	<dialog id="confirmDialog">

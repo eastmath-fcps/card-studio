@@ -997,25 +997,87 @@ small,
 
 .app-footer {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	justify-content: space-between;
-	gap: 14px;
+	gap: 2px 20px;
 	border-top: 1px solid var(--line);
-	padding: 12px 28px;
+	padding: 6px 28px;
 	background: #fff;
-	font-size: 10px;
+	font-size: 11px;
 	color: var(--muted);
 }
 
+.footer-info,
+.footer-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 16px;
+}
+
+.footer-brand {
+	display: inline-flex;
+	align-items: center;
+	font-weight: 600;
+	color: var(--ink);
+	white-space: nowrap;
+}
+
 .version {
-	font-size: 9px;
+	font-size: 10px;
+	font-weight: 400;
+	color: var(--muted);
 	border-left: 1px solid var(--line);
 	margin-left: 8px;
 	padding-left: 8px;
 }
 
-.app-footer .text-button {
-	font-size: 10px;
+.footer-privacy {
+	white-space: nowrap;
+}
+
+.footer-actions {
+	gap: 0 16px;
+}
+
+.footer-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	min-height: 28px;
+	padding: 0;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--accent);
+	font-size: 11px;
+	font-weight: 500;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.footer-action:hover {
+	background: transparent;
+	color: var(--ink);
+	text-decoration: underline;
+}
+
+.install-action {
+	padding: 0 8px;
+	background: var(--pale);
+	font-weight: 600;
+}
+
+.install-action:hover {
+	background: #dce6f0;
+	text-decoration: none;
+}
+
+.footer-action svg {
+	width: 14px;
+	height: 14px;
 }
 
 .data-view {
@@ -1673,9 +1735,6 @@ dialog::backdrop {
 		padding: 26px 20px;
 	}
 
-	.app-footer>span:last-child {
-		display: none;
-	}
 }
 
 @media (max-width: 600px) {
@@ -1937,7 +1996,17 @@ dialog::backdrop {
 	}
 
 	.app-footer {
-		padding: 10px 16px;
+		padding: 8px 16px;
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.footer-info {
+		gap: 4px 12px;
+	}
+
+	.footer-action {
+		min-height: 44px;
 	}
 
 	.saved-layout {
@@ -2211,8 +2280,8 @@ dialog::backdrop {
 
 	.app-footer {
 		min-height: 36px;
-		flex: 0 0 36px;
-		padding: 7px 22px;
+		flex: 0 0 auto;
+		padding: 4px 22px;
 	}
 
 	.print-view {
