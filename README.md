@@ -1,6 +1,6 @@
 # Card Studio
 
-A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It currently prints on Avery 5911 business cards and Avery 5523/58163 labels, with selectable paper stock. The interface starts with an editable example design and twelve fictional sample records.
+A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It currently prints on Avery 5911 business cards, 5523/58163 shipping labels, and 5160 address labels. The interface starts with an editable example design and twelve fictional sample records.
 
 ## Try it
 
@@ -14,6 +14,7 @@ Use **Paper stock** in **Design card** or **Preview & print**. Both controls sel
 | --- | --- | --- | --- |
 | Avery 5911 | 3.5 × 2 inches | US Letter | 2 columns × 5 rows; no gaps |
 | Avery 5523/58163 | 4 × 2 inches | US Letter | 2 columns × 5 rows; gap between columns |
+| Avery 5160 | 2⅝ × 1 inch | US Letter | 3 columns × 10 rows; gaps between columns |
 
 The selected stock controls the canvas dimensions, rounded label corners, safe-area guide, sheet preview, starting-slot choices, alignment test, and printing. It is included in saved and exported layouts.
 
@@ -169,3 +170,4 @@ To add a format, verify its manufacturer's actual template, add its geometry (or
 
 - [Avery 5911](https://www.avery.com/templates/5911)
 - [Avery 5523](https://www.avery.com/templates/5523)/[Avery 58163](https://www.avery.com/templates/58163) (these have identical layouts)
+- [Avery 5160](https://www.avery.com/templates/5160)

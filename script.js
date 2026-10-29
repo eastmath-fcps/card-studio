@@ -13,7 +13,7 @@
 	const capacity = (template) => template.grid.columns * template.grid.rows;
 	const dimensions = (template) => `${inchText(template.card.width)} × ${inchText(template.card.height)} in`;
 	function inchText(value) {
-		const fraction = { 0.125: '⅛', 0.25: '¼', 0.5: '½', 0.75: '¾' }[value % 1];
+		const fraction = { 0.125: '⅛', 0.25: '¼', 0.375: '⅜', 0.5: '½', 0.625: '⅝', 0.75: '¾', 0.875: '⅞' }[value % 1];
 		return fraction ? `${Math.floor(value) || ''}${fraction}` : String(value);
 	}
 	const MAX_ROWS = 10000,
@@ -895,10 +895,21 @@
 		checkpoint();
 		renderDesign();
 	}
+	// Handle new element geometry and existing geometry when switching layouts
+	function fitAndAddObject(o) {
+		const { card, safeInset } = currentTemplate();
+		const maxW = card.width - 2 * safeInset, maxH = card.height - 2 * safeInset;
+		const scale = o.type === 'image' ? Math.min(1, maxW / o.w, maxH / o.h) : 1;
+		o.w = clamp(o.w * scale, 0.05, maxW);
+		o.h = clamp(o.h * scale, 0.05, maxH);
+		o.x = clamp(o.x, safeInset, card.width - safeInset - o.w);
+		o.y = clamp(o.y, safeInset, card.height - safeInset - o.h);
+		addObject(o);
+	}
 	function insertField(name) {
 		let o = selected();
 		if (!o || o.type !== 'text') {
-			addObject(textObject(name, `<<${name}>>`, 0.25, 0.8, 3, 0.4, 18));
+			fitAndAddObject(textObject(name, `<<${name}>>`, 0.25, 0.8, 3, 0.4, 18));
 			return;
 		}
 		const input = $('textContent');
@@ -1178,7 +1189,7 @@
 			const ratio = canvas.width / canvas.height,
 				w = Math.min(1.2, 1.1 * ratio),
 				h = w / ratio;
-			addObject({
+			fitAndAddObject({
 				id: uid(),
 				type: 'image',
 				name: file.name.slice(0, 80),
@@ -1911,10 +1922,10 @@
 		showView('design');
 	});
 	$('addText').addEventListener('click', () =>
-		addObject(textObject('Text', 'Your text', 0.3, 0.8, 2.9, 0.4, 18))
+		fitAndAddObject(textObject('Text', 'Your text', 0.3, 0.8, 2.9, 0.4, 18))
 	);
 	$('addShape').addEventListener('click', () =>
-		addObject(shapeObject('Shape', 0.4, 0.7, 1, 0.5, '#dce5f0'))
+		fitAndAddObject(shapeObject('Shape', 0.4, 0.7, 1, 0.5, '#dce5f0'))
 	);
 	$('addImage').addEventListener('click', () => {
 		imageReplacement = null;

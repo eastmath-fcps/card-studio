@@ -47,10 +47,33 @@
 			grid: {
 				columns: 2,
 				rows: 5,
-				left: 11.2001 / 72, // left column's left edge in inches
+				left: 11.2001 / 72, // left edge in inches
 				top: 0.5,
-				gapX: 13.5503 / 72, // right column's left edge in inches
+				gapX: 13.5503 / 72, // column gap in inches
 				gapY: 0,
+			},
+			safeInset: 0.125,
+		},
+		'letter-address-30': {
+			page: {
+				width: 8.5,
+				height: 11,
+				name: 'Letter',
+				orientation: 'Portrait'
+			},
+			card: {
+				width: 2.625,
+				height: 1,
+				radius: 0.1
+			},
+			// 3-col
+			grid: {
+				columns: 3,
+				rows: 10,
+				left: 0.1875,
+				top: 0.5,
+				gapX: 0.125,
+				gapY: 0
 			},
 			safeInset: 0.125,
 		},
@@ -68,6 +91,10 @@
 		{
 			id: 'avery-5523', name: 'Avery 5523', description: 'WeatherProof address labels',
 			geometryId: 'letter-shipping-10', source: 'https://www.avery.com/templates/5523',
+		},
+		{
+			id: 'avery-5160', name: 'Avery 5160', description: 'Address labels',
+			geometryId: 'letter-address-30', source: 'https://www.avery.com/templates/5160',
 		},
 	]);
 	const defaultId = 'avery-5911'; // default to Avery 5911 cards
