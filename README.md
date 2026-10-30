@@ -1,4 +1,4 @@
-# Card Studio v1.2
+# Card Studio v1.2.1
 
 A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It currently prints on Avery 5911 business cards, 5523/58163 shipping labels, and 5160 address labels. The interface starts with an editable example design and twelve fictional sample records.
 

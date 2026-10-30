@@ -523,6 +523,7 @@
 	const state = {
 		layout: starterLayout(),
 		layoutId: null,
+		layoutSession: 0,
 		savedFingerprint: null,
 		dirty: false,
 		selected: null,
@@ -1461,7 +1462,8 @@
 		saving = true;
 		$('saveLayout').disabled = $('saveCopy').disabled = true;
 		try {
-			const before = fingerprint(),
+			const session = state.layoutSession,
+				before = fingerprint(),
 				layout = clone(state.layout);
 			layout.name = ($('layoutName').value.trim() || 'Untitled layout').slice(0, 80);
 			if (copy) layout.name = `${layout.name.slice(0, 75)} copy`;
@@ -1472,6 +1474,12 @@
 				updatedAt: new Date().toISOString(),
 				document: payload(layout),
 			});
+			// Opening even the same saved layout starts a new session. A completed save belongs to the original session, not whichever design is now open.
+			if (state.layoutSession !== session) {
+				notify(`“${layout.name}” was saved in this browser.`);
+				if ($('layoutsDialog').open) await renderSavedLayouts();
+				return;
+			}
 			// Preserve any edits made while the storage transaction was in progress.
 			if (fingerprint() === before) {
 				state.layout = layout;
@@ -1557,6 +1565,7 @@
 		} catch { notify('Open your saved layout from Layouts to continue after the update.'); }
 	}
 	async function loadLayout(layout, id = null) {
+		state.layoutSession++;
 		state.layout = layout;
 		state.layoutId = id;
 		state.selected = null;
@@ -1638,6 +1647,7 @@
 							return;
 						await storage('delete', item.id);
 						if (state.layoutId === item.id) {
+							state.layoutSession++;
 							state.layoutId = null;
 							state.savedFingerprint = null;
 							markChanged();

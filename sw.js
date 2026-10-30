@@ -1,6 +1,6 @@
 // Card Studio's offline files and update lifecycle; update VERSION for every release that changes an app file, and deploy all files together.
 'use strict';
-const VERSION = '1.2';
+const VERSION = '1.2.1';
 const BASE = self.registration.scope;
 const PREFIX = `card-studio:${BASE}:`;
 const APP_CACHE = `${PREFIX}app-${VERSION}`;
