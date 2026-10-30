@@ -9,7 +9,7 @@
 	<title>Card Studio - Design & merge</title>
 	<link rel="icon" type="image/svg+xml" href="assets/card-studio-icon.svg" />
 	<link rel="manifest" href="manifest.webmanifest" />
-	<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
+	<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=1.2" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-title" content="Card Studio" />
 	<link rel="stylesheet" href="style.css" />
@@ -691,14 +691,16 @@
 				<span class="footer-brand">
 					Card Studio
 					<span class="version">
-						v1.1
+						v1.2
 					</span>
 				</span>
 				<span class="footer-privacy">
 					Local design. Local data.
 				</span>
+				<span id="offlineStatus" class="footer-status" role="status" hidden></span>
 			</div>
 			<nav class="footer-actions" aria-label="Help and app">
+				<button id="updateApp" type="button" class="footer-action install-action" hidden>Update available</button>
 				<button id="installApp" type="button" class="footer-action install-action" hidden>
 					<svg aria-hidden="true">
 						<use href="#i-install" />
@@ -813,6 +815,28 @@
 		</div>
 	</dialog>
 
+	<dialog id="updateDialog" aria-labelledby="updateTitle" aria-describedby="updateDescription">
+		<div class="dialog-heading">
+			<h2 id="updateTitle">
+				Update Card Studio
+			</h2>
+			<button id="closeUpdateDialog" type="button" class="icon-button" aria-label="Close update dialog">×</button>
+		</div>
+		<p id="updateDescription">
+			A new version is ready. Updating reloads this window and reopens your saved layout. You can keep working and update later.
+		</p>
+		<p id="updateSaveNotice" class="small" hidden>
+			Your layout has unsaved changes. Save &amp; update saves them in this browser before reloading.
+		</p>
+		<p id="updateRecordsNotice" class="notice" hidden>
+			Your imported spreadsheet records will be cleared by the reload. Import the spreadsheet again afterward; records are not saved with your layout.
+		</p>
+		<p id="updateError" class="notice" role="alert" hidden></p>
+		<div class="dialog-actions">
+			<button id="postponeUpdate" type="button">Keep working</button>
+			<button id="applyUpdate" type="button" class="primary">Update &amp; reload</button>
+		</div>
+	</dialog>
 	<dialog id="installDialog" aria-labelledby="installTitle" aria-describedby="installDescription">
 		<div class="dialog-heading">
 			<h2 id="installTitle">
@@ -832,7 +856,7 @@
 			The browser could not open the installation prompt. You can look for Install in the browser menu, or try again on your next visit.
 		</p>
 		<p class="muted small">
-			Save your layout before opening the installed app. Import your spreadsheet again in the new window. Internet access is still required.
+			Save your layout before opening the installed app. Import your spreadsheet again in the new window. After the footer says “Offline ready,” you can reopen the app without a connection. New Google Fonts still need internet access.
 		</p>
 	</dialog>
 	<dialog id="helpDialog">
@@ -876,7 +900,10 @@
 			On iPhone or iPad, open this page in Safari and choose <strong>Share → Add to Home Screen</strong>. Leave <strong>Open as Web App</strong> on if offered. In Safari on Mac, choose <strong>File → Add to Dock</strong>.
 		</p>
 		<p class="muted small">
-			The installed app still needs internet access. Save your layout before opening a new app window, then import your spreadsheet again. Saved layouts and imported fonts stay local to your browser or app; export layouts and keep your font files for backups or moving to another device.
+			Once the footer says <strong>Offline ready</strong>, you can reopen Card Studio, import CSV or Excel files, design, save, and print without a connection. Google Fonts work offline only when the needed styles and characters are cached; use system or imported fonts for dependable offline work. Browser storage can be cleared or evicted, so keep exported layouts and original font files as backups.
+		</p>
+		<p class="small">
+			When <strong>Update available</strong> appears, you can keep working or choose it to update. The app saves unsaved layout changes before an approved reload and reopens that layout afterward. Import your spreadsheet again after reloading. Close other Card Studio windows before applying the update.
 		</p>
 		<h3>
 			Keyboard shortcuts
@@ -891,7 +918,7 @@
 			Ctrl/Cmd + S: save layout - Escape: deselect
 		</p>
 		<p class="muted small">
-			Use Chrome or Edge for the most consistent printing. Google Fonts and the Excel reader load from external services when needed; spreadsheet contents are not sent to those services. Network restrictions may block these resources.
+			Use Chrome or Edge for the most consistent printing. Google Fonts load from Google when needed; spreadsheet contents are not sent to Google. The Excel reader library is bundled with the app.
 		</p>
 		<p class="muted small icon-credit">
 			Brand, favicon, and app icons: “id” by Olivia from <a href="https://thenounproject.com/icon/id-1987656/" target="_blank" rel="noopener noreferrer">Noun Project</a> (<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>), recolored and resized.

@@ -91,11 +91,11 @@
 		function loadGoogle(spec) {
 			return new Promise((resolve, reject) => {
 				const link = document.createElement('link');
-				link.rel = 'stylesheet'; link.href = googleURL(spec.font);
+				link.rel = 'stylesheet'; link.crossOrigin = 'anonymous'; link.href = googleURL(spec.font);
 				let done = false;
 				const finish = (error) => {
 					if (done) return; done = true; clearTimeout(timer);
-					if (error) { link.remove(); reject(Error(`“${spec.font}” could not load from Google Fonts. Check the name and connection, then try again.`)); }
+					if (error) { link.remove(); reject(Error(`“${spec.font}” could not load from Google Fonts. Connect to the internet to load uncached fonts, or choose a system or imported font.`)); }
 					else resolve();
 				};
 				const timer = setTimeout(() => finish(true), 20000);

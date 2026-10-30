@@ -1,4 +1,4 @@
-# Card Studio v1.1
+# Card Studio v1.2
 
 A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It currently prints on Avery 5911 business cards, 5523/58163 shipping labels, and 5160 address labels. The interface starts with an editable example design and twelve fictional sample records.
 
@@ -101,19 +101,16 @@ The app cannot change your printer driver settings. Do not use Fit to page or a 
 
 ## Dependencies and local hosting
 
-The application consists of `index.html`, `style.css`, `templates.js`, `google-fonts.js`, `fonts.js`, `script.js`, `pwa.js`, `manifest.webmanifest`, and the `assets/` directory. Keep them together. The HTML loads installation support independently, then the template catalog, Google Fonts catalog, and font manager before the main editor script.
+The application consists of `index.html`, `style.css`, `templates.js`, `google-fonts.js`, `fonts.js`, `script.js`, `pwa.js`, `sw.js`, `manifest.webmanifest`, and the `assets/` and `vendor/` directories. Keep them together. The HTML loads installation support independently, then the template catalog, Google Fonts catalog, and font manager before the main editor script.
 
 ### Excel reader
 
-XLS/XLSX parsing uses **SheetJS Community Edition 0.20.3**, pinned to the version recommended by its standalone-browser documentation when this version was built. It loads only when an Excel file is imported:
+XLS/XLSX parsing uses the bundled **SheetJS Community Edition 0.20.3** full standalone build at `vendor/xlsx.full.min.js`. The service worker precaches it for offline availability, but it is executed only when an Excel file is imported. No CDN request is needed. The full build preserves XLS support.
 
-1. Try `vendor/xlsx.full.min.js` beside the app.
-2. If it is absent or unavailable, try `https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js`.
-
-If your network blocks the CDN, download the full standalone build from the official source and place it at `vendor/xlsx.full.min.js`. Include the upstream license and any accompanying notices when redistributing it. Keep the full build: the mini build omits XLS support. The reader is not bundled in this ZIP. CSV import remains available if the reader cannot load.
+The upstream script is unmodified. Its Apache 2.0 license, attribution, source URL, and checksum are included in `vendor/`. If the reader cannot load, CSV import remains available.
 
 - [SheetJS standalone installation](https://docs.sheetjs.com/docs/getting-started/installation/standalone/)
-- [SheetJS distribution and license information](https://cdn.sheetjs.com/)
+- [SheetJS license information](https://docs.sheetjs.com/docs/miscellany/license/)
 
 ### Fonts
 
@@ -154,7 +151,7 @@ Select **Libre Barcode 39** for a text box and enter `*<<RecordID>>*` (replace `
 
 ## Data handling
 
-The app has no analytics, accounts, upload endpoint, or backend. It reads files through the browser's File API and holds the records in memory. Spreadsheet cells are displayed as literal text, not executable HTML. External library and font providers receive ordinary resource requests, not a spreadsheet upload. Hosting the Excel reader yourself and using system or local fonts removes those runtime dependency requests.
+The app has no analytics, accounts, upload endpoint, or backend. It reads files through the browser's File API and holds the records in memory. Spreadsheet cells are displayed as literal text, not executable HTML. Google Fonts receives ordinary font-resource requests, not spreadsheet uploads. The Excel reader is bundled locally; using system or imported fonts avoids external font requests.
 
 ## Adding paper-stock templates
 

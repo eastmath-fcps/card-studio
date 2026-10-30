@@ -1037,6 +1037,12 @@ small,
 	white-space: nowrap;
 }
 
+.footer-status {
+	white-space: nowrap;
+	color: var(--accent);
+	font-size: 10px;
+}
+
 .footer-actions {
 	gap: 0 16px;
 }

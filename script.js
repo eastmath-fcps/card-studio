@@ -546,6 +546,7 @@
 	let toastTimer,
 		imageReplacement = null,
 		saving = false,
+		pendingActions = 0,
 		textSelection = { start: 0, end: 0 },
 		workbookFileName = '',
 		dataImportSerial = 0;
@@ -1237,17 +1238,13 @@
 		if (globalThis.XLSX) return Promise.resolve(globalThis.XLSX);
 		if (xlsxPromise) return xlsxPromise;
 		xlsxPromise = (async () => {
-			try {
-				await loadScript('vendor/xlsx.full.min.js', 2500);
-			} catch {
-				await loadScript('https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js');
-			}
+			await loadScript('vendor/xlsx.full.min.js');
 			if (!globalThis.XLSX) throw Error('The Excel reader did not initialize.');
 			return globalThis.XLSX;
 		})().catch(() => {
 			xlsxPromise = null;
 			throw Error(
-				'Excel import could not load SheetJS. Your network may block its CDN. Try CSV, or use the local-library setup in README.md.'
+				'The bundled Excel reader could not load. Reconnect and reload the app, or import a CSV file instead.'
 			);
 		});
 		return xlsxPromise;
@@ -1525,6 +1522,39 @@
 				'Replace design'
 			)
 		);
+	}
+	// The PWA asks the editor to save before an approved update. Only a saved layout ID allows the reload; spreadsheet rows remain in memory.
+	const updateResumeKey = `card-studio:${new URL('./', location.href).pathname}:resume-layout`;
+	window.CardStudioUpdates = Object.freeze({
+		status: () => ({ dirty: state.dirty, hasRecords: !state.sample && state.rows.length > 0 }),
+		async prepareReload() {
+			if (saving || state.printBusy || pendingActions) throw Error('Wait for saving, importing, or printing to finish before updating.');
+			if (state.dirty) await saveLayout();
+			if (state.dirty) throw Error('The layout changed while saving. Keep working, then try updating again.');
+			try {
+				if (state.layoutId) sessionStorage.setItem(updateResumeKey, JSON.stringify({ id: state.layoutId, time: Date.now() }));
+				else sessionStorage.removeItem(updateResumeKey);
+			} catch { throw Error('The browser could not remember your layout for the update. Export a backup, then close and reopen the app to update.'); }
+		},
+		cancelReload() {
+			try { sessionStorage.removeItem(updateResumeKey); } catch { /* Storage may be disabled. */ }
+		},
+	});
+	async function restoreAfterUpdate() {
+		try {
+			const saved = sessionStorage.getItem(updateResumeKey);
+			if (!saved) return;
+			sessionStorage.removeItem(updateResumeKey);
+			const { id, time } = JSON.parse(saved);
+			if (typeof id !== 'string' || !Number.isFinite(time) || Date.now() - time > 30 * 60 * 1000) return;
+			const before = fingerprint(), importSerial = dataImportSerial;
+			const record = await storage('get', id);
+			if (!record) return;
+			// A slow storage read must never overwrite work already started.
+			if (state.dirty || fingerprint() !== before || dataImportSerial !== importSerial || $('layoutName').value !== state.layout.name) return;
+			await loadLayout(validateLayout(record.document), id);
+			notify('Layout reopened after the update. Import your spreadsheet again if needed.');
+		} catch { notify('Open your saved layout from Layouts to continue after the update.'); }
 	}
 	async function loadLayout(layout, id = null) {
 		state.layout = layout;
@@ -1894,10 +1924,13 @@
 		}
 	}
 	async function safe(fn) {
+		pendingActions++;
 		try {
 			await fn();
 		} catch (e) {
 			notify(e.message || 'Something went wrong. Please try again.', 8000);
+		} finally {
+			pendingActions--;
 		}
 	}
 	document
@@ -2171,4 +2204,5 @@
 	renderDesign();
 	updateUndo();
 	showView('design');
+	restoreAfterUpdate();
 })();
