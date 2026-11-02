@@ -2355,20 +2355,62 @@ dialog::backdrop {
 }
 
 .fonts-dialog {
-	width: 740px;
+	width: 960px;
+	height: min(660px, calc(100vh - 32px));
+	height: min(660px, calc(100dvh - 32px));
+	max-height: calc(100vh - 32px);
+	max-height: calc(100dvh - 32px);
+	padding: 24px;
+	overflow: hidden;
+}
+
+.fonts-dialog[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.fonts-dialog .dialog-heading,
+.fonts-dialog .dialog-actions {
+	flex: none;
+}
+
+.fonts-dialog .dialog-heading {
+	margin-bottom: 12px;
+}
+
+.fonts-dialog .dialog-actions {
+	align-items: center;
+	margin-top: 12px;
+}
+
+.fonts-dialog .dialog-actions button {
+	flex: none;
+}
+
+.font-picker-body {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+	gap: 20px;
+	flex: 1 1 0;
+	min-height: 0;
+	min-width: 0;
 }
 
 .font-picker-controls {
+	display: flex;
+	flex-direction: column;
 	border: 0;
 	margin: 0;
 	padding: 0;
 	min-width: 0;
+	min-height: 0;
 }
 
 .font-source-buttons {
 	display: flex;
+	flex: none;
 	gap: 8px;
-	margin-bottom: 16px;
+	margin-bottom: 12px;
 }
 
 .font-source-buttons [aria-pressed='true'] {
@@ -2376,18 +2418,38 @@ dialog::backdrop {
 	border-color: var(--accent);
 }
 
+#googleFontPanel {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 0;
+	min-height: 0;
+}
+
 .font-search-row {
 	display: grid;
-	grid-template-columns: 2fr 1fr;
+	grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+	flex: none;
 	gap: 12px;
+}
+
+.font-search-row label,
+.font-search-row input,
+.font-search-row select {
+	min-width: 0;
 }
 
 .font-results {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
+	align-content: start;
 	gap: 5px;
-	max-height: 230px;
+	flex: 1 1 0;
+	min-height: 0;
+	padding: 5px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
 	overflow-y: auto;
+	overscroll-behavior: contain;
 }
 
 .font-results button {
@@ -2400,36 +2462,70 @@ dialog::backdrop {
 
 .font-results-footer {
 	display: flex;
+	flex: none;
 	justify-content: space-between;
 	align-items: center;
 	gap: 8px;
 	margin-top: 8px;
 }
 
-.font-results-footer button {
-	margin-left: 4px;
+.font-results-footer>div {
+	display: flex;
+	flex: none;
+	gap: 4px;
+}
+
+.font-search-help {
+	display: flex;
+	flex: none;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0 8px;
+	margin-top: 8px;
+}
+
+.font-search-help p {
+	margin: 0;
+}
+
+.font-preview-panel {
+	min-width: 0;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
 }
 
 .font-preview-box {
-	padding: 14px;
+	padding: 16px;
 	border: 1px solid var(--line);
 	border-radius: 6px;
-	margin-top: 16px;
+	background: var(--bg);
+}
+
+#fontPreviewName,
+#fontPickerStatus {
+	overflow-wrap: anywhere;
 }
 
 #fontPreview {
 	font-size: 28px;
 	line-height: 1.4;
 	overflow-wrap: anywhere;
-	margin: 10px 0 0;
+	margin: 12px 0 0;
 }
 
 #fontPickerStatus {
-	overflow-wrap: anywhere;
+	flex: 1;
+	min-width: 0;
+	margin: 0;
 }
 
-.fonts-dialog .dialog-actions {
-	margin-top: 12px;
+#localFontPanel {
+	flex: 1 1 0;
+	min-height: 0;
+	padding: 4px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
 }
 
 #localFontPanel hr {
@@ -2438,38 +2534,86 @@ dialog::backdrop {
 	margin: 16px 0;
 }
 
-@media (max-width: 600px) {
-	.font-search-row {
-		grid-template-columns: 1fr;
-		gap: 0;
+@media (max-height: 720px) {
+	.fonts-dialog {
+		padding: 16px 20px;
+	}
+
+	.font-source-buttons {
+		margin-bottom: 8px;
+	}
+
+	.font-search-row label {
+		margin-bottom: 8px;
+	}
+
+	.font-preview-box {
+		padding: 12px;
+	}
+}
+
+@media (max-width: 799px) {
+	.fonts-dialog {
+		padding: 16px;
+	}
+
+	.fonts-dialog .dialog-actions {
+		flex-wrap: wrap;
+	}
+
+	.fonts-dialog .dialog-actions button {
+		margin-left: auto;
+	}
+
+	#fontPickerStatus {
+		flex-basis: 100%;
+	}
+
+	.font-picker-body {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr) 130px;
+		gap: 12px;
 	}
 
 	.font-results {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		max-height: 180px;
+	}
+
+	.font-search-row {
+		gap: 8px;
+	}
+
+	.font-preview-box {
+		padding: 10px 12px;
+	}
+
+	#fontPreview {
+		font-size: 20px;
+		margin-top: 6px;
 	}
 }
 
-.fonts-dialog[open] {
-	display: flex;
-	flex-direction: column;
-}
+@media (max-width: 799px) and (max-height: 640px),
+(max-height: 420px) {
+	.font-picker-body {
+		display: block;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 4px;
+	}
 
-.fonts-dialog .dialog-heading,
-.fonts-dialog .dialog-actions,
-.font-preview-box,
-#fontPickerStatus {
-	flex-shrink: 0;
-}
+	.font-picker-controls,
+	#googleFontPanel {
+		display: block;
+	}
 
-.fonts-dialog .font-picker-scroll {
-	flex: 1 1 auto;
-	min-height: 100px;
-	overflow-y: auto;
-	padding-right: 4px;
-}
+	.font-results,
+	#localFontPanel,
+	.font-preview-panel {
+		overflow: visible;
+	}
 
-#fontPreview {
-	max-height: 95px;
-	overflow-y: auto;
+	.font-preview-panel {
+		margin-top: 12px;
+	}
 }

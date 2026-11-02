@@ -691,7 +691,7 @@
 				<span class="footer-brand">
 					Card Studio
 					<span class="version">
-						v1.2.1
+						v1.2.2
 					</span>
 				</span>
 				<span class="footer-privacy">
@@ -762,7 +762,7 @@
 			</h2>
 			<button data-close class="icon-button" aria-label="Close font picker">×</button>
 		</div>
-		<div class="font-picker-scroll">
+		<div id="fontPickerBody" class="font-picker-body">
 			<fieldset id="fontPickerControls" class="font-picker-controls">
 				<div class="font-source-buttons" aria-label="Font sources">
 					<button type="button" data-font-tab="google" aria-pressed="true">Google Fonts</button>
@@ -780,10 +780,12 @@
 						<span id="googleFontCount" class="muted small" role="status"></span>
 						<div><button id="googleFontsPrev" type="button" aria-label="Previous fonts">‹</button><button id="googleFontsNext" type="button" aria-label="Next fonts">›</button></div>
 					</div>
-					<p class="muted small">
-						Choose a family to preview it. For a newly added family, enter its exact Google Fonts name.
-					</p>
-					<button id="previewGoogleName" type="button" class="text-button">Preview the entered name</button>
+					<div class="font-search-help">
+						<p id="googleFontNameHint" class="muted small">
+							Can't find a family? Enter its exact name.
+						</p>
+						<button id="previewGoogleName" type="button" class="text-button" aria-describedby="googleFontNameHint">Preview the entered name</button>
+					</div>
 				</section>
 				<section id="localFontPanel" aria-label="Local fonts" hidden>
 					<label>Installed font name<input id="installedFontName" placeholder="Team 401" maxlength="120" /></label>
@@ -800,17 +802,19 @@
 					</p>
 				</section>
 			</fieldset>
+			<div id="fontPreviewPanel" class="font-preview-panel">
+				<div class="font-preview-box">
+					<strong id="fontPreviewName">Font preview</strong>
+					<p id="fontPreview">
+						The quick brown fox jumps over the lazy dog. 0123456789
+					</p>
+				</div>
+			</div>
 		</div>
-		<div class="font-preview-box">
-			<strong id="fontPreviewName">Font preview</strong>
-			<p id="fontPreview">
-				The quick brown fox jumps over the lazy dog. 0123456789
-			</p>
-		</div>
-		<p id="fontPickerStatus" class="muted small" role="status">
-			Choose a font to preview.
-		</p>
 		<div class="dialog-actions">
+			<p id="fontPickerStatus" class="muted small" role="status">
+				Choose a font to preview.
+			</p>
 			<button id="usePickedFont" class="primary" disabled>Use this font</button>
 		</div>
 	</dialog>

@@ -190,6 +190,7 @@
 				$('fontPreview').style.fontFamily = 'sans-serif';
 				$('fontPreview').style.lineHeight = '1.4';
 				$('fontPreviewName').textContent = spec.font;
+				$('fontPreviewPanel').scrollTop = 0;
 				setStatus('Loading font preview…');
 				try {
 					await ensure(spec); await loadText(spec, $('fontPreview').textContent);
@@ -204,6 +205,7 @@
 				const matches = catalog.filter((f) => f.family.toLowerCase().includes(query) && (!category || category === f.category));
 				page = Math.min(page, Math.max(0, Math.ceil(matches.length / 18) - 1));
 				$('googleFontResults').replaceChildren();
+				$('googleFontResults').scrollTop = 0;
 				for (const f of matches.slice(page * 18, page * 18 + 18)) {
 					const button = document.createElement('button'); button.type = 'button'; button.textContent = f.family;
 					button.addEventListener('click', () => preview({ font: f.family, fontSource: 'google' }));
@@ -218,7 +220,7 @@
 				$('fontPreview').style.lineHeight = '1.4';
 				setStatus('Choose a font to preview.');
 				$('fontsDialog').showModal(); results();
-				$('fontsDialog').querySelector('.font-picker-scroll').scrollTop = 0;
+				for (const id of ['fontPickerBody', 'localFontPanel', 'fontPreviewPanel']) $(id).scrollTop = 0;
 				($('googleFontPanel').hidden ? $('installedFontName') : $('googleFontSearch')).focus();
 			});
 			$('fontsDialog').addEventListener('close', () => { previewSerial++; pending = null; $('usePickedFont').disabled = true; });
@@ -232,6 +234,7 @@
 			for (const button of document.querySelectorAll('[data-font-tab]')) button.addEventListener('click', () => {
 				const local = button.dataset.fontTab === 'local';
 				$('googleFontPanel').hidden = local; $('localFontPanel').hidden = !local;
+				$('fontPickerBody').scrollTop = 0;
 				for (const tab of document.querySelectorAll('[data-font-tab]')) tab.setAttribute('aria-pressed', String(tab === button));
 			});
 			$('previewGoogleName').addEventListener('click', () => {
