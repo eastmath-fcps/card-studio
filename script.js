@@ -20,7 +20,10 @@
 		MAX_OBJECTS = 100,
 		MAX_CARDS = 5000,
 		MAX_NAME_LENGTH = 80,
-		MAX_TEXT_LENGTH = 20000;
+		MAX_TEXT_LENGTH = 20000,
+		MAX_LAYOUT_BYTES = 30 * 1024 * 1024;
+	const LAYOUT_SIZE_MESSAGE = 'Layouts can be up to 30 MiB, including embedded images. Remove an image or replace it with a smaller one, or shorten the text, then try again.';
+	const imageJSONSizes = new WeakMap();
 	const Fonts = typeof module !== 'undefined' && module.exports
 		? require('./fonts.js') : globalThis.CardStudioFonts;
 
@@ -319,6 +322,34 @@
 			objects,
 		};
 	}
+	function layoutDocument(layout) {
+		return { format: 'card-studio-layout', version: 3, layout };
+	}
+	function layoutFileBytes(layout) {
+		let imageBytes = 0;
+		// Count exactly the UTF-8 JSON that Export writes, including indentation.
+		const metadata = JSON.stringify(layoutDocument(layout), function (key, value) {
+			if (key === 'src' && this.type === 'image' && typeof value === 'string') {
+				let cached = imageJSONSizes.get(this);
+				if (!cached || cached.src !== value) {
+					cached = { src: value, bytes: new TextEncoder().encode(JSON.stringify(value)).byteLength - 2 };
+					imageJSONSizes.set(this, cached);
+				}
+				imageBytes += cached.bytes;
+				return '';
+			}
+			return value;
+		}, 2);
+		return new TextEncoder().encode(metadata).byteLength + imageBytes;
+	}
+	function assertLayoutSize(layout) {
+		if (layoutBudgetBytes(layout) > MAX_LAYOUT_BYTES) throw Error(LAYOUT_SIZE_MESSAGE);
+	}
+	function layoutBudgetBytes(layout) {
+		const idAllowance = layout.objects.reduce((sum, o) =>
+			sum + Math.max(0, 48 - new TextEncoder().encode(JSON.stringify(o.id) || '""').byteLength + 2), 0);
+		return layoutFileBytes(layout) + idAllowance;
+	}
 	const Core = {
 		parseCSV,
 		normalizeRows,
@@ -330,6 +361,11 @@
 		bounds,
 		resized,
 		validateLayout,
+		layoutDocument,
+		layoutFileBytes,
+		layoutBudgetBytes,
+		assertLayoutSize,
+		MAX_LAYOUT_BYTES,
 		Templates,
 		capacity,
 		outsideCard,
@@ -604,9 +640,10 @@
 	function changeTemplate(id) {
 		if (id === state.layout.templateId) return;
 		const template = Templates.get(id);
-		state.layout.templateId = id;
-		state.layout.width = template.card.width;
-		state.layout.height = template.card.height;
+		if (!changeLayout(state.layout, { templateId: id, width: template.card.width, height: template.card.height })) {
+			for (const control of ['paperStock', 'printPaperStock']) $(control).value = state.layout.templateId;
+			return;
+		}
 		checkpoint();
 		renderDesign();
 		if (state.view === 'print') updateSheetPreview();
@@ -630,6 +667,21 @@
 	}
 	function selected() {
 		return state.layout.objects.find((o) => o.id === state.selected);
+	}
+	function changeLayout(target, changes) {
+		const before = layoutBudgetBytes(state.layout), previous = { ...target };
+		Object.assign(target, changes);
+		const after = layoutBudgetBytes(state.layout);
+		// Older browser saves can exceed the budget. Keep them editable, allowing changes that reduce their size until they can be saved/exported again.
+		if (after > MAX_LAYOUT_BYTES && after > before) {
+			for (const key of Object.keys(changes)) {
+				if (Object.hasOwn(previous, key)) target[key] = previous[key];
+				else delete target[key];
+			}
+			notify(LAYOUT_SIZE_MESSAGE, 8000);
+			return false;
+		}
+		return true;
 	}
 	function markChanged() {
 		state.dirty = fingerprint() !== state.savedFingerprint;
@@ -900,7 +952,7 @@
 			notify('A card can contain up to 100 objects.');
 			return;
 		}
-		state.layout.objects.push(o);
+		if (!changeLayout(state.layout, { objects: [...state.layout.objects, o] })) return;
 		state.selected = o.id;
 		checkpoint();
 		renderDesign();
@@ -933,7 +985,11 @@
 			input.setSelectionRange(start, end);
 			return;
 		}
-		o.text = text;
+		if (!changeLayout(o, { text })) {
+			input.focus();
+			input.setSelectionRange(start, end);
+			return;
+		}
 		checkpoint();
 		renderCanvas();
 		renderInspector();
@@ -1005,7 +1061,8 @@
 	});
 	$('cardCanvas').addEventListener('pointermove', (e) => {
 		if (!drag || e.pointerId !== drag.id) return;
-		const o = selected(),
+		const selectedObject = selected(),
+			o = selectedObject && { ...selectedObject },
 			b = drag.before,
 			factor = DPI * state.zoom,
 			dx = (e.clientX - drag.startX) / factor,
@@ -1029,8 +1086,10 @@
 			o.x = clamp(o.x, -OBJECT_LIMITS.x, OBJECT_LIMITS.x);
 			o.y = clamp(o.y, -OBJECT_LIMITS.y, OBJECT_LIMITS.y);
 		}
-		renderCanvas();
-		renderInspector();
+		if (changeLayout(selectedObject, o)) {
+			renderCanvas();
+			renderInspector();
+		}
 	});
 	function finishDrag(e) {
 		if (!drag || (e && e.pointerId !== drag.id)) return;
@@ -1051,8 +1110,9 @@
 	function bindProperty(id, key, type = 'string', options = {}) {
 		const node = $(id);
 		node.addEventListener('change', () => {
-			const o = selected();
-			if (!o) return;
+			const current = selected();
+			if (!current) return;
+			const o = { ...current };
 			let value =
 				type === 'boolean' ? node.checked : type === 'number' ? Number(node.value) : node.value;
 			if (type === 'number') {
@@ -1075,6 +1135,10 @@
 				}
 			}
 			o[key] = options.scale ? value * options.scale : value;
+			if (!changeLayout(current, o)) {
+				renderInspector();
+				return;
+			}
 			checkpoint();
 			renderDesign();
 		});
@@ -1107,7 +1171,10 @@
 	$('textContent').addEventListener('input', () => {
 		const o = selected();
 		if (o?.type !== 'text') return;
-		o.text = $('textContent').value.slice(0, MAX_TEXT_LENGTH);
+		if (!changeLayout(o, { text: $('textContent').value.slice(0, MAX_TEXT_LENGTH) })) {
+			$('textContent').value = o.text;
+			return;
+		}
 		markChanged();
 		renderCanvas();
 	});
@@ -1123,7 +1190,7 @@
 		$(key).addEventListener('click', () => {
 			const o = selected();
 			if (!o || o.type !== 'text') return;
-			o[key] = !o[key];
+			if (!changeLayout(o, { [key]: !o[key] })) return;
 			checkpoint();
 			renderDesign();
 		});
@@ -1135,7 +1202,7 @@
 	$('centerH').addEventListener('click', () => {
 		const o = selected();
 		if (o) {
-			o.x = (state.layout.width - o.w) / 2;
+			if (!changeLayout(o, { x: (state.layout.width - o.w) / 2 })) return;
 			checkpoint();
 			renderDesign();
 		}
@@ -1143,7 +1210,7 @@
 	$('centerV').addEventListener('click', () => {
 		const o = selected();
 		if (o) {
-			o.y = (state.layout.height - o.h) / 2;
+			if (!changeLayout(o, { y: (state.layout.height - o.h) / 2 })) return;
 			checkpoint();
 			renderDesign();
 		}
@@ -1163,8 +1230,8 @@
 	function applyFont(spec) {
 		const o = selected();
 		if (!o || o.type !== 'text') return;
-		delete o.fontId;
-		Object.assign(o, Fonts.normalize(spec));
+		if (!changeLayout(o, { fontId: undefined, ...Fonts.normalize(spec) })) return;
+		if (o.fontId === undefined) delete o.fontId;
 		checkpoint();
 		renderDesign();
 		ensureAllFonts().then(renderCanvas).catch((error) => notify(error.message, 8000));
@@ -1199,7 +1266,7 @@
 				throw Error('The embedded image is too large. Try a smaller image.');
 			const old = state.layout.objects.find((o) => o.id === replacementId);
 			if (old?.type === 'image') {
-				old.src = src;
+				if (!changeLayout(old, { src })) return;
 				checkpoint();
 				renderDesign();
 				return;
@@ -1471,8 +1538,10 @@
 		});
 	}
 	function payload(layout = state.layout) {
-		const document = { format: 'card-studio-layout', version: 3, layout: clone(layout) };
+		const document = layoutDocument(clone(layout));
+		// Check the same rules used on reopening, but keep the original object IDs.
 		validateLayout(document);
+		assertLayoutSize(document.layout);
 		return document;
 	}
 	async function saveLayout(copy = false) {
@@ -1644,6 +1713,7 @@
 						const copyDoc = clone(item.document);
 						copyDoc.layout.name = `${item.name.slice(0, 75)} copy`;
 						validateLayout(copyDoc);
+						assertLayoutSize(copyDoc.layout);
 						await storage('put', {
 							id: uid(),
 							name: copyDoc.layout.name,
@@ -1703,7 +1773,7 @@
 	}
 	async function importLayout(file) {
 		if (!file) return;
-		if (file.size > 30 * 1024 * 1024) throw Error('Choose a layout smaller than 30 MB.');
+		if (file.size > MAX_LAYOUT_BYTES) throw Error('Choose a layout file of 30 MiB or smaller.');
 		let parsed;
 		try {
 			parsed = JSON.parse(await file.text());
@@ -2101,7 +2171,10 @@
 		renderDataTable();
 	});
 	$('layoutName').addEventListener('input', () => {
-		state.layout.name = $('layoutName').value;
+		if (!changeLayout(state.layout, { name: $('layoutName').value })) {
+			$('layoutName').value = state.layout.name;
+			return;
+		}
 		markChanged();
 	});
 	$('layoutName').addEventListener('change', checkpoint);
@@ -2194,12 +2267,15 @@
 			!e.target.closest('.view-tabs')
 		) {
 			e.preventDefault();
-			if (e.key === 'ArrowLeft') o.x -= step;
-			if (e.key === 'ArrowRight') o.x += step;
-			if (e.key === 'ArrowUp') o.y -= step;
-			if (e.key === 'ArrowDown') o.y += step;
-			o.x = round(clamp(o.x, -OBJECT_LIMITS.x, OBJECT_LIMITS.x));
-			o.y = round(clamp(o.y, -OBJECT_LIMITS.y, OBJECT_LIMITS.y));
+			let { x, y } = o;
+			if (e.key === 'ArrowLeft') x -= step;
+			if (e.key === 'ArrowRight') x += step;
+			if (e.key === 'ArrowUp') y -= step;
+			if (e.key === 'ArrowDown') y += step;
+			if (!changeLayout(o, {
+				x: round(clamp(x, -OBJECT_LIMITS.x, OBJECT_LIMITS.x)),
+				y: round(clamp(y, -OBJECT_LIMITS.y, OBJECT_LIMITS.y)),
+			})) return;
 			checkpoint();
 			renderDesign();
 		}

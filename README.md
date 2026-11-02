@@ -1,4 +1,4 @@
-# Card Studio v1.2.4
+# Card Studio v1.2.5
 
 A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It currently prints on Avery 5911 business cards, 5523/58163 shipping labels, and 5160 address labels. The interface starts with an editable example design and twelve fictional sample records.
 
@@ -82,7 +82,7 @@ Text-editing controls keep their normal keyboard behavior.
 
 **Save layout** stores the current design in this browser's IndexedDB. Change its name in the header. **Layouts** opens saved designs, makes independent copies, imports a layout file, or deletes a saved layout. **Save current as a copy** saves the current design under a new identity and switches to that copy.
 
-**Export** downloads a versioned `.cardlayout.json` file. It includes the paper-stock ID, card dimensions, object positions, styles, static text, background, and embedded images. It excludes the spreadsheet rows and workbook. **Caution: Any personal information you manually type into static text or import as an image is part of the saved design.**
+**Export** downloads a versioned `.cardlayout.json` file. It includes the paper-stock ID, card dimensions, object positions, styles, static text, background, and embedded images. It excludes the spreadsheet rows and workbook. **Caution: Any personal information you manually type into static text or import as an image is part of the saved design.** Layouts are limited to 30 MiB (31,457,280 bytes), including embedded images and JSON formatting.
 
 Export files for backups, sharing with colleagues, or moving to a different computer. Import through **Layouts → Import layout**, then save the imported design. Re-import the current spreadsheet separately.
 
