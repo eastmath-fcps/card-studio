@@ -327,7 +327,7 @@
 						<section id="textProperties" class="panel-section" hidden>
 							<label>
 								Text content
-								<textarea id="textContent" rows="4" spellcheck="false" placeholder="&lt;&lt;LastName&gt;&gt;, &lt;&lt;FirstName&gt;&gt;"></textarea>
+								<textarea id="textContent" rows="4" maxlength="20000" spellcheck="false" placeholder="&lt;&lt;LastName&gt;&gt;, &lt;&lt;FirstName&gt;&gt;"></textarea>
 							</label>
 							<p class="muted small">
 								Mix your own text with
@@ -691,7 +691,7 @@
 				<span class="footer-brand">
 					Card Studio
 					<span class="version">
-						v1.2.2
+						v1.2.3
 					</span>
 				</span>
 				<span class="footer-privacy">
@@ -770,10 +770,15 @@
 				</div>
 				<section id="googleFontPanel" aria-label="Google Fonts search">
 					<div class="font-search-row">
-						<label>Search families<input id="googleFontSearch" type="search" placeholder="Search fonts, e.g. Playfair Display" maxlength="120" /></label>
-						<label>Category<select id="googleFontCategory">
+						<label>
+							Search families<input id="googleFontSearch" type="search" placeholder="Search fonts, e.g. Playfair Display" maxlength="120" />
+						</label>
+						<label>
+							Category
+							<select id="googleFontCategory">
 								<option value="">All categories</option>
-							</select></label>
+							</select>
+						</label>
 					</div>
 					<div id="googleFontResults" class="font-results" aria-label="Matching font families"></div>
 					<div class="font-results-footer">
@@ -788,14 +793,23 @@
 					</div>
 				</section>
 				<section id="localFontPanel" aria-label="Local fonts" hidden>
-					<label>Installed font name<input id="installedFontName" placeholder="Team 401" maxlength="120" /></label>
+					<label>
+						Installed font name
+						<input id="installedFontName" placeholder="Team 401" maxlength="120" />
+					</label>
 					<button id="loadInstalledFont" type="button">Preview installed font</button>
 					<p class="muted small">
 						Use the full font name shown on your computer. If the browser cannot find it, import the font file below.
 					</p>
 					<hr />
-					<label>Font file<input id="localFontFile" type="file" accept=".ttf,.otf,.woff,.woff2" /></label>
-					<label>Name in your font menu<input id="localFontLabel" maxlength="120" placeholder="e.g. Team 401" /></label>
+					<label>
+						Font file
+						<input id="localFontFile" type="file" accept=".ttf,.otf,.woff,.woff2" />
+					</label>
+					<label>
+						Name in your font menu
+						<input id="localFontLabel" maxlength="120" placeholder="e.g. Team 401" />
+					</label>
 					<button id="importFontFile" type="button">Import font file</button>
 					<p class="muted small">
 						TTF, OTF, WOFF, or WOFF2, up to 20 MB. Imported files are saved in this browser. Exported layouts remember the font but do not include its file; import the same file on another computer. Bold and italic may be synthesized from the imported face.

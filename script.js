@@ -18,7 +18,9 @@
 	}
 	const MAX_ROWS = 10000,
 		MAX_OBJECTS = 100,
-		MAX_CARDS = 5000;
+		MAX_CARDS = 5000,
+		MAX_NAME_LENGTH = 80,
+		MAX_TEXT_LENGTH = 20000;
 	const Fonts = typeof module !== 'undefined' && module.exports
 		? require('./fonts.js') : globalThis.CardStudioFonts;
 
@@ -254,8 +256,9 @@
 				throw Error('An object has an invalid position, size, or style.');
 			return v;
 		};
-		const str = (v, max) => {
-			if (typeof v !== 'string' || v.length > max) throw Error('A layout text value is invalid.');
+		const str = (v, max, label) => {
+			if (typeof v !== 'string' || v.length > max)
+				throw Error(`${label} must be text with ${max.toLocaleString()} characters or fewer.`);
 			return v;
 		};
 		const objects = l.objects.map((o, index) => {
@@ -264,7 +267,7 @@
 			const out = {
 				id: `object-${index}-${uid()}`,
 				type: o.type,
-				name: str(o.name, 80),
+				name: str(o.name, MAX_NAME_LENGTH, `Layer ${index + 1}'s name`),
 				x: number(o.x, -OBJECT_LIMITS.x, OBJECT_LIMITS.x),
 				y: number(o.y, -OBJECT_LIMITS.y, OBJECT_LIMITS.y),
 				w: number(o.w, 0.05, OBJECT_LIMITS.x * 2),
@@ -276,7 +279,7 @@
 				if (!['left', 'center', 'right'].includes(o.align))
 					throw Error('A text style is unsupported.');
 				Object.assign(out, {
-					text: str(o.text, 20000),
+					text: str(o.text, MAX_TEXT_LENGTH, `Text in layer ${index + 1}`),
 					...Fonts.normalize(o),
 					fontSize: number(o.fontSize, 6, 96),
 					color: color(o.color),
@@ -307,7 +310,7 @@
 			templateId: template.id,
 			width: template.card.width,
 			height: template.card.height,
-			name: str(l.name, 80) || 'Untitled layout',
+			name: str(l.name, MAX_NAME_LENGTH, 'The layout name') || 'Untitled layout',
 			background: color(l.background),
 			objects,
 		};
@@ -347,7 +350,7 @@
 	const textObject = (name, text, x, y, w, h, fontSize, extra = {}) => ({
 		id: uid(),
 		type: 'text',
-		name,
+		name: name.slice(0, MAX_NAME_LENGTH),
 		text,
 		x,
 		y,
@@ -917,7 +920,14 @@
 		const input = $('textContent');
 		const start = Math.min(textSelection.start, o.text.length),
 			end = Math.min(textSelection.end, o.text.length);
-		o.text = o.text.slice(0, start) + `<<${name}>>` + o.text.slice(end);
+		const text = o.text.slice(0, start) + `<<${name}>>` + o.text.slice(end);
+		if (text.length > MAX_TEXT_LENGTH) {
+			notify(`This text box can contain up to ${MAX_TEXT_LENGTH.toLocaleString()} characters. Shorten it or select text to replace before inserting a field.`, 8000);
+			input.focus();
+			input.setSelectionRange(start, end);
+			return;
+		}
+		o.text = text;
 		checkpoint();
 		renderCanvas();
 		renderInspector();
@@ -1091,7 +1101,7 @@
 	$('textContent').addEventListener('input', () => {
 		const o = selected();
 		if (o?.type !== 'text') return;
-		o.text = $('textContent').value.slice(0, 20000);
+		o.text = $('textContent').value.slice(0, MAX_TEXT_LENGTH);
 		markChanged();
 		renderCanvas();
 	});
@@ -1194,7 +1204,7 @@
 			fitAndAddObject({
 				id: uid(),
 				type: 'image',
-				name: file.name.slice(0, 80),
+				name: file.name.slice(0, MAX_NAME_LENGTH),
 				src,
 				fit: 'contain',
 				lockAspect: true,
@@ -1455,7 +1465,9 @@
 		});
 	}
 	function payload(layout = state.layout) {
-		return { format: 'card-studio-layout', version: 3, layout: clone(layout) };
+		const document = { format: 'card-studio-layout', version: 3, layout: clone(layout) };
+		validateLayout(document);
+		return document;
 	}
 	async function saveLayout(copy = false) {
 		if (saving) return;
@@ -1465,7 +1477,7 @@
 			const session = state.layoutSession,
 				before = fingerprint(),
 				layout = clone(state.layout);
-			layout.name = ($('layoutName').value.trim() || 'Untitled layout').slice(0, 80);
+			layout.name = ($('layoutName').value.trim() || 'Untitled layout').slice(0, MAX_NAME_LENGTH);
 			if (copy) layout.name = `${layout.name.slice(0, 75)} copy`;
 			const id = copy || !state.layoutId ? uid() : state.layoutId;
 			await storage('put', {
@@ -1625,6 +1637,7 @@
 					safe(async () => {
 						const copyDoc = clone(item.document);
 						copyDoc.layout.name = `${item.name.slice(0, 75)} copy`;
+						validateLayout(copyDoc);
 						await storage('put', {
 							id: uid(),
 							name: copyDoc.layout.name,
@@ -1672,6 +1685,15 @@
 		link.click();
 		link.remove();
 		setTimeout(() => URL.revokeObjectURL(url), 1000);
+	}
+	function exportLayout() {
+		const document = payload();
+		download(
+			JSON.stringify(document, null, 2),
+			`${escapeName(document.layout.name)}.cardlayout.json`,
+			'application/json'
+		);
+		notify('Layout exported with images, without spreadsheet records.');
 	}
 	async function importLayout(file) {
 		if (!file) return;
@@ -2083,14 +2105,7 @@
 		$('layoutsDialog').showModal();
 		renderSavedLayouts();
 	});
-	$('exportLayout').addEventListener('click', () => {
-		download(
-			JSON.stringify(payload(), null, 2),
-			`${escapeName(state.layout.name)}.cardlayout.json`,
-			'application/json'
-		);
-		notify('Layout exported with images, without spreadsheet records.');
-	});
+	$('exportLayout').addEventListener('click', () => safe(exportLayout));
 	$('importLayout').addEventListener('click', () => $('layoutFile').click());
 	$('layoutFile').addEventListener('change', () => {
 		const f = $('layoutFile').files[0];
