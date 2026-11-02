@@ -31,15 +31,19 @@
 		globalThis.crypto?.randomUUID?.() || `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 	const escapeName = (name) =>
 		name.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '') || 'card-layout';
-	const tokens = (text) => [...text.matchAll(/<<([^<>]+)>>/g)].map((match) => match[1].trim());
+	// Handle < and > in field names; single < or > are literal, << or >> are field identifiers
+	const FIELD_PATTERN = /<<(?!<)((?:[^<>]|<(?!<)|>(?!>))+)>>/g;
+	const tokens = (text) => [...text.matchAll(FIELD_PATTERN)].map((match) => match[1].trim());
+	function fieldToken(name) {
+		return name.startsWith('<') || name.endsWith('>') ? `<< ${name} >>` : `<<${name}>>`;
+	}
 	function merge(text, row) {
-		return text.replace(/<<([^<>]+)>>/g, (whole, field) =>
+		return text.replace(FIELD_PATTERN, (whole, field) =>
 			Object.hasOwn(row, field.trim()) ? String(row[field.trim()]) : whole
 		);
 	}
 	function parseCSV(source) {
 		source = source.replace(/^\uFEFF/, '');
-		// Detect a delimiter using the first logical row, ignoring quoted content.
 		const counts = { ',': 0, ';': 0, '\t': 0 };
 		let inQuotes = false;
 		for (let i = 0; i < source.length; i++) {
@@ -320,6 +324,7 @@
 		normalizeRows,
 		merge,
 		tokens,
+		fieldToken,
 		makePlan,
 		cardPosition,
 		bounds,
@@ -913,14 +918,15 @@
 	}
 	function insertField(name) {
 		let o = selected();
+		const token = fieldToken(name);
 		if (!o || o.type !== 'text') {
-			fitAndAddObject(textObject(name, `<<${name}>>`, 0.25, 0.8, 3, 0.4, 18));
+			fitAndAddObject(textObject(name, token, 0.25, 0.8, 3, 0.4, 18));
 			return;
 		}
 		const input = $('textContent');
 		const start = Math.min(textSelection.start, o.text.length),
 			end = Math.min(textSelection.end, o.text.length);
-		const text = o.text.slice(0, start) + `<<${name}>>` + o.text.slice(end);
+		const text = o.text.slice(0, start) + token + o.text.slice(end);
 		if (text.length > MAX_TEXT_LENGTH) {
 			notify(`This text box can contain up to ${MAX_TEXT_LENGTH.toLocaleString()} characters. Shorten it or select text to replace before inserting a field.`, 8000);
 			input.focus();
@@ -931,7 +937,7 @@
 		checkpoint();
 		renderCanvas();
 		renderInspector();
-		const cursor = start + name.length + 4;
+		const cursor = start + token.length;
 		input.focus();
 		input.setSelectionRange(cursor, cursor);
 		textSelection = { start: cursor, end: cursor };
@@ -1369,7 +1375,7 @@
 		$('fieldChips').replaceChildren();
 		state.headers.forEach((h) => {
 			const b = el('button', '', h);
-			b.title = `Insert <<${h}>>`;
+			b.title = `Insert ${fieldToken(h)}`;
 			b.addEventListener('click', () => insertField(h));
 			$('fieldChips').append(b);
 		});
