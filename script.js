@@ -28,6 +28,21 @@
 		? require('./fonts.js') : globalThis.CardStudioFonts;
 
 	const clone = (value) => JSON.parse(JSON.stringify(value));
+	function copyLayout(layout) {
+		// Layout/object fields are primitives apart from the objects array. Copy mutable containers, sharing immutable strings such as embedded images.
+		return { ...layout, objects: layout.objects.map((o) => ({ ...o })) };
+	}
+	function sameLayout(a, b) {
+		if (a === b) return true;
+		if (!a || !b) return false;
+		const sameProperties = (left, right, keys) => keys.length === Object.keys(right).length &&
+			keys.every((key) => Object.hasOwn(right, key) && left[key] === right[key]);
+		const { objects: aObjects, ...aProperties } = a,
+			{ objects: bObjects, ...bProperties } = b;
+		return sameProperties(aProperties, bProperties, Object.keys(aProperties)) &&
+			aObjects.length === bObjects.length && aObjects.every((o, i) =>
+				sameProperties(o, bObjects[i], Object.keys(o)));
+	}
 	const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 	const round = (v, digits = 3) => Number(v.toFixed(digits));
 	const uid = () =>
@@ -351,6 +366,8 @@
 		return layoutFileBytes(layout) + idAllowance;
 	}
 	const Core = {
+		copyLayout,
+		sameLayout,
 		parseCSV,
 		normalizeRows,
 		merge,
@@ -568,7 +585,7 @@
 		layout: starterLayout(),
 		layoutId: null,
 		layoutSession: 0,
-		savedFingerprint: null,
+		savedLayout: null,
 		dirty: false,
 		selected: null,
 		headers: [],
@@ -662,9 +679,6 @@
 		$(id).textContent = message;
 		$(id).hidden = !message;
 	}
-	function fingerprint() {
-		return JSON.stringify(state.layout);
-	}
 	function selected() {
 		return state.layout.objects.find((o) => o.id === state.selected);
 	}
@@ -684,17 +698,16 @@
 		return true;
 	}
 	function markChanged() {
-		state.dirty = fingerprint() !== state.savedFingerprint;
+		state.dirty = !sameLayout(state.layout, state.savedLayout);
 		$('saveState').textContent = state.dirty ? 'Unsaved changes' : 'Saved in this browser';
 		$('saveState').classList.toggle('dirty', state.dirty);
 		state.printReady = false;
 		$('printRoot').replaceChildren();
 	}
 	function checkpoint() {
-		const json = fingerprint();
-		if (state.history[state.historyIndex] !== json) {
+		if (!sameLayout(state.history[state.historyIndex], state.layout)) {
 			state.history = state.history.slice(0, state.historyIndex + 1);
-			state.history.push(json);
+			state.history.push(copyLayout(state.layout));
 			if (state.history.length > 80) state.history.shift();
 			state.historyIndex = state.history.length - 1;
 		}
@@ -709,7 +722,7 @@
 		const next = state.historyIndex + delta;
 		if (next < 0 || next >= state.history.length) return;
 		state.historyIndex = next;
-		state.layout = JSON.parse(state.history[next]);
+		state.layout = copyLayout(state.history[next]);
 		if (!selected()) state.selected = null;
 		$('layoutName').value = state.layout.name;
 		markChanged();
@@ -1009,7 +1022,7 @@
 		const o = selected();
 		if (!o) return;
 		addObject({
-			...clone(o),
+			...o,
 			id: uid(),
 			name: `${o.name.slice(0, 73)} copy`,
 			x: clamp(o.x + 0.08, -OBJECT_LIMITS.x, OBJECT_LIMITS.x),
@@ -1050,7 +1063,7 @@
 		drag = {
 			id: e.pointerId,
 			mode: handle || 'move',
-			before: clone(o),
+			before: { ...o },
 			startX: e.clientX,
 			startY: e.clientY,
 			cx,
@@ -1538,7 +1551,7 @@
 		});
 	}
 	function payload(layout = state.layout) {
-		const document = layoutDocument(clone(layout));
+		const document = layoutDocument(copyLayout(layout));
 		// Check the same rules used on reopening, but keep the original object IDs.
 		validateLayout(document);
 		assertLayoutSize(document.layout);
@@ -1550,8 +1563,8 @@
 		$('saveLayout').disabled = $('saveCopy').disabled = true;
 		try {
 			const session = state.layoutSession,
-				before = fingerprint(),
-				layout = clone(state.layout);
+				before = copyLayout(state.layout),
+				layout = copyLayout(state.layout);
 			layout.name = ($('layoutName').value.trim() || 'Untitled layout').slice(0, MAX_NAME_LENGTH);
 			if (copy) layout.name = `${layout.name.slice(0, 75)} copy`;
 			const id = copy || !state.layoutId ? uid() : state.layoutId;
@@ -1568,12 +1581,12 @@
 				return;
 			}
 			// Preserve any edits made while the storage transaction was in progress.
-			if (fingerprint() === before) {
+			if (sameLayout(state.layout, before)) {
 				state.layout = layout;
 				$('layoutName').value = layout.name;
 			}
 			state.layoutId = id;
-			state.savedFingerprint = JSON.stringify(layout);
+			state.savedLayout = copyLayout(layout);
 			checkpoint();
 			notify(
 				copy
@@ -1642,11 +1655,11 @@
 			sessionStorage.removeItem(updateResumeKey);
 			const { id, time } = JSON.parse(saved);
 			if (typeof id !== 'string' || !Number.isFinite(time) || Date.now() - time > 30 * 60 * 1000) return;
-			const before = fingerprint(), importSerial = dataImportSerial;
+			const before = copyLayout(state.layout), importSerial = dataImportSerial;
 			const record = await storage('get', id);
 			if (!record) return;
 			// A slow storage read must never overwrite work already started.
-			if (state.dirty || fingerprint() !== before || dataImportSerial !== importSerial || $('layoutName').value !== state.layout.name) return;
+			if (state.dirty || !sameLayout(state.layout, before) || dataImportSerial !== importSerial || $('layoutName').value !== state.layout.name) return;
 			await loadLayout(validateLayout(record.document), id);
 			notify('Layout reopened after the update. Import your spreadsheet again if needed.');
 		} catch { notify('Open your saved layout from Layouts to continue after the update.'); }
@@ -1656,9 +1669,9 @@
 		state.layout = layout;
 		state.layoutId = id;
 		state.selected = null;
-		state.history = [fingerprint()];
+		state.history = [copyLayout(layout)];
 		state.historyIndex = 0;
-		state.savedFingerprint = id ? fingerprint() : null;
+		state.savedLayout = id ? copyLayout(layout) : null;
 		$('layoutName').value = layout.name;
 		markChanged();
 		renderDesign();
@@ -1738,7 +1751,7 @@
 						if (state.layoutId === item.id) {
 							state.layoutSession++;
 							state.layoutId = null;
-							state.savedFingerprint = null;
+							state.savedLayout = null;
 							markChanged();
 						}
 						await renderSavedLayouts();
@@ -2304,8 +2317,8 @@
 		else if (state.view === 'print' && !state.printBusy && !state.printReady) updateSheetPreview();
 	});
 	fontManager.initPicker({ apply: applyFont, refresh: renderDesign, objects: () => state.layout.objects });
-	state.history = [fingerprint()];
-	state.savedFingerprint = fingerprint();
+	state.history = [copyLayout(state.layout)];
+	state.savedLayout = copyLayout(state.layout);
 	state.selected = state.layout.objects.find((o) => o.name === 'Name').id;
 	loadSample();
 	renderDesign();
