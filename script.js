@@ -29,7 +29,8 @@
 
 	const clone = (value) => JSON.parse(JSON.stringify(value));
 	function copyLayout(layout) {
-		// Layout/object fields are primitives apart from the objects array. Copy mutable containers, sharing immutable strings such as embedded images.
+		// Layout/object fields are primitives apart from the objects array. Copy
+		// mutable containers, sharing immutable strings such as embedded images.
 		return { ...layout, objects: layout.objects.map((o) => ({ ...o })) };
 	}
 	function sameLayout(a, b) {

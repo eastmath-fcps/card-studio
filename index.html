@@ -691,7 +691,7 @@
 				<span class="footer-brand">
 					Card Studio
 					<span class="version">
-						v1.2.7
+						v1.2.8
 					</span>
 				</span>
 				<span class="footer-privacy">
@@ -721,13 +721,13 @@
 	<input id="dataFile" type="file" accept=".csv,.xls,.xlsx" hidden />
 	<input id="imageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden />
 	<input id="layoutFile" type="file" accept=".json,.cardlayout" hidden />
-	<dialog id="layoutsDialog">
+	<dialog id="layoutsDialog" aria-labelledby="layoutsTitle">
 		<div class="dialog-heading">
 			<div>
 				<span class="eyebrow">
 					YOUR DESIGNS
 				</span>
-				<h2>
+				<h2 id="layoutsTitle">
 					Saved layouts
 				</h2>
 			</div>
@@ -861,9 +861,9 @@
 			Save your layout before opening the installed app. Import your spreadsheet again in the new window. After the footer says “Offline ready,” you can reopen the app without a connection. New Google Fonts still need internet access.
 		</p>
 	</dialog>
-	<dialog id="helpDialog">
+	<dialog id="helpDialog" aria-labelledby="helpTitle">
 		<div class="dialog-heading">
-			<h2>
+			<h2 id="helpTitle">
 				A quick guide
 			</h2>
 			<button data-close class="icon-button" aria-label="Close">
@@ -926,7 +926,7 @@
 			Brand, favicon, and app icons: “id” by Olivia from <a href="https://thenounproject.com/icon/id-1987656/" target="_blank" rel="noopener noreferrer">Noun Project</a> (<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>), recolored and resized.
 		</p>
 	</dialog>
-	<dialog id="confirmDialog">
+	<dialog id="confirmDialog" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
 		<h2 id="confirmTitle">
 			Continue?
 		</h2>
