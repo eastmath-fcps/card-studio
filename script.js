@@ -1981,7 +1981,9 @@
 					))
 				)
 					return;
-				$('app').inert = true;
+			}
+			$('app').inert = true;
+			if (!test) {
 				await ensureAllFonts();
 				await preflight(plan);
 			}
@@ -2238,9 +2240,14 @@
 	$('preparePrint').addEventListener('click', () => printCards());
 	$('printTest').addEventListener('click', () => printCards(true));
 	document.addEventListener('keydown', (e) => {
+		const mod = e.ctrlKey || e.metaKey;
+		if (state.printBusy) {
+			// Inert controls do not stop document-level shortcuts. Also suppress browser fallbacks for app commands, but keep dialog keys usable.
+			if (mod && ['s', 'p', 'z', 'y', 'd'].includes(e.key.toLowerCase())) e.preventDefault();
+			return;
+		}
 		if (document.querySelector('dialog[open]')) return;
 		const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
-		const mod = e.ctrlKey || e.metaKey;
 		if (mod && e.key.toLowerCase() === 's') {
 			e.preventDefault();
 			document.activeElement?.blur();
