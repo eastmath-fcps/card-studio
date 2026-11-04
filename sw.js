@@ -1,12 +1,12 @@
 // Card Studio's offline files and update lifecycle; update VERSION for every release that changes an app file, and deploy all files together.
 'use strict';
-const VERSION = '1.2.8';
+const VERSION = '1.3.0';
 const BASE = self.registration.scope;
 const PREFIX = `card-studio:${BASE}:`;
 const APP_CACHE = `${PREFIX}app-${VERSION}`;
 const FONT_CACHE = `${PREFIX}fonts-1`;
 const APP_FILES = [
-	'./', 'index.html', 'style.css', 'templates.js', 'google-fonts.js',
+	'./', 'index.html', 'theme.js', 'style.css', 'templates.js', 'google-fonts.js',
 	'fonts.js', 'script.js', 'pwa.js', 'manifest.webmanifest', 'sample.csv',
 	'assets/card-studio-icon.svg', 'assets/icon-192.png', 'assets/icon-512.png',
 	'assets/icon-maskable-512.png', 'assets/apple-touch-icon.png',

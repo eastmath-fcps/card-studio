@@ -1,4 +1,4 @@
-# Card Studio v1.2.8
+# Card Studio v1.3.0
 
 A browser-based data merge and layout editor for personalized cards, built to replace a Publisher workflow. It currently prints on Avery 5911 business cards, 5523/58163 shipping labels, and 5160 address labels. The interface starts with an editable example design and twelve fictional sample records.
 
@@ -101,7 +101,7 @@ The app cannot change your printer driver settings. Do not use Fit to page or a 
 
 ## Dependencies and local hosting
 
-The application consists of `index.html`, `style.css`, `templates.js`, `google-fonts.js`, `fonts.js`, `script.js`, `pwa.js`, `sw.js`, `manifest.webmanifest`, and the `assets/` and `vendor/` directories. Keep them together. The HTML loads installation support independently, then the template catalog, Google Fonts catalog, and font manager before the main editor script.
+The application consists of `index.html`, `style.css`, `theme.js`, `templates.js`, `google-fonts.js`, `fonts.js`, `script.js`, `pwa.js`, `sw.js`, `manifest.webmanifest`, and the `assets/` and `vendor/` directories. Keep them together. The HTML loads installation support independently, then the template catalog, Google Fonts catalog, and font manager before the main editor script.
 
 ### Excel reader
 

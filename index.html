@@ -12,6 +12,7 @@
 	<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=1.2" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-title" content="Card Studio" />
+	<script src="theme.js"></script>
 	<link rel="stylesheet" href="style.css" />
 	<style id="pageSizeStyle"></style>
 	<script src="pwa.js" defer></script>
@@ -106,6 +107,16 @@
 					Save layout
 				</button>
 			</div>
+			<button id="themeToggle" type="button" class="theme-toggle" role="switch" aria-checked="true" aria-label="Light mode" title="Switch to dark mode">
+				<svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+					<path d="M20.2 15.5A8.5 8.5 0 0 1 8.5 3.8a8.5 8.5 0 1 0 11.7 11.7Z" />
+				</svg>
+				<span class="theme-track" aria-hidden="true"><span class="theme-thumb"></span></span>
+				<svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+					<circle cx="12" cy="12" r="4" />
+					<path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" />
+				</svg>
+			</button>
 		</header>
 		<nav class="workflow" aria-label="Workflow">
 			<div class="view-tabs" role="tablist" aria-label="Workspace">
@@ -691,7 +702,7 @@
 				<span class="footer-brand">
 					Card Studio
 					<span class="version">
-						v1.2.8
+						v1.3.0
 					</span>
 				</span>
 				<span class="footer-privacy">
@@ -892,6 +903,12 @@
 				Choose your paper stock, review the sheet preview, test on plain paper, then print at 100% on the matching paper size. Turn off headers and footers and enable background graphics.
 			</li>
 		</ol>
+		<h3>
+			Light and dark mode
+		</h3>
+		<p class="small">
+			Use the moon/sun switch in the header to change the interface theme. Card Studio follows your device's theme until you choose one, then remembers your choice in this browser. Your card colors, exported layouts, and printed pages stay the same.
+		</p>
 		<h3>
 			Install Card Studio
 		</h3>
